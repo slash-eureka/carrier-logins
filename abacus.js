@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Stagehand } from '@browserbasehq/stagehand';
 
 // Parse command line arguments
@@ -14,7 +15,7 @@ if (!username || !password || !loginUrl) {
 // Get Browserbase credentials from environment
 const BROWSERBASE_API_KEY = process.env.BROWSERBASE_API_KEY;
 const BROWSERBASE_PROJECT_ID = process.env.BROWSERBASE_PROJECT_ID;
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!BROWSERBASE_API_KEY || !BROWSERBASE_PROJECT_ID) {
   console.error(JSON.stringify({
@@ -24,10 +25,10 @@ if (!BROWSERBASE_API_KEY || !BROWSERBASE_PROJECT_ID) {
   process.exit(1);
 }
 
-if (!GOOGLE_API_KEY) {
+if (!GEMINI_API_KEY) {
   console.error(JSON.stringify({
     success: false,
-    error: 'Missing GOOGLE_API_KEY environment variable (required for Stagehand AI actions with Gemini)'
+    error: 'Missing GEMINI_API_KEY environment variable (required for Stagehand AI actions with Gemini)'
   }));
   process.exit(1);
 }
@@ -41,7 +42,7 @@ async function downloadStatement() {
     modelName: 'google/gemini-2.0-flash-exp',
     disablePino: true,
     modelClientOptions: {
-      apiKey: GOOGLE_API_KEY
+      apiKey: GEMINI_API_KEY
     }
   });
 
