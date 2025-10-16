@@ -2,6 +2,6 @@
   "type": "module",
   "dependencies": {
     "@browserbasehq/stagehand": "^2.5.2",
-    "dotenv": "^17.2.3"
+    "dotenv": "^16.6.1"
   }
 }
