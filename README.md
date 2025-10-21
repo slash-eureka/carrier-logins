@@ -59,23 +59,23 @@ npm run build
 npm start
 ```
 
-### Manual Carrier Script Testing
+### Manual Workflow Testing
 
-You can test individual carrier scripts using the test-carrier command:
+You can test individual carrier workflows using the test-workflow command:
 
 ```bash
-npm run test-carrier <carrier-name> <username> <password> <loginUrl>
+npm run test-workflow <carrier-name> <username> <password> <loginUrl>
 ```
 
 **Examples:**
 
 ```bash
-npm run test-carrier abacus myuser mypass https://abacus.com/login
-npm run test-carrier advantage-partners myuser mypass https://advantage.com/login
-npm run test-carrier amerisafe myuser mypass https://amerisafe.com/login
+npm run test-workflow net_abacus myuser mypass https://abacus.net/login
+npm run test-workflow com_advantagepartners myuser mypass https://advantagepartners.com/login
+npm run test-workflow com_amerisafe myuser mypass https://amerisafe.com/login
 ```
 
-The script will output JSON with the automation results.
+The script will output JSON with the workflow results.
 
 ### API Endpoints
 

@@ -4,7 +4,7 @@ import type { Statement, CloudinaryAttachment, CarrierName } from '../types/inde
 
 /**
  * Filter statements by accounting period start date
- * @param statements - Array of statements from carrier script
+ * @param statements - Array of statements from workflow
  * @param accountingPeriodStartDate - ISO date string (YYYY-MM-DD)
  * @returns Filtered statements
  */

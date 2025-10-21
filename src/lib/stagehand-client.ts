@@ -1,9 +1,9 @@
-import { Stagehand } from '@browserbasehq/stagehand';
+import { Stagehand, type Page } from '@browserbasehq/stagehand';
 import { config } from '../config/index.js';
 
 export interface StagehandClient {
   stagehand: Stagehand;
-  page: any;
+  page: Page;
   close: () => Promise<void>;
 }
 

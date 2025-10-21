@@ -8,18 +8,18 @@ import type {
 } from '../types/index.js';
 
 /**
- * Create inbox statements in Rails
+ * Create inbox statements via Admin API
  * @param jobId - UUID of SupplierStatementFetchingJob
  * @param organizationId - UUID of Organization
  * @param attachments - Array of Cloudinary attachments
- * @returns Response from Rails API
+ * @returns Response from Admin API
  */
 export async function createInboxStatements(
   jobId: string,
   organizationId: string,
   attachments: CloudinaryAttachment[]
 ): Promise<CreateInboxStatementsResponse> {
-  const url = `${config.railsApiUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
+  const url = `${config.adminApiUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
 
   const payload: CreateInboxStatementsRequest = {
     organization_id: organizationId,
@@ -39,18 +39,18 @@ export async function createInboxStatements(
   } catch (error: any) {
     if (error.response) {
       throw new Error(
-        `Rails API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
+        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
       );
     }
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Rails API request timeout');
+      throw new Error('Admin API request timeout');
     }
     throw new Error(`Failed to create inbox statements: ${error.message}`);
   }
 }
 
 /**
- * Update job status in Rails
+ * Update job status via Admin API
  * @param jobId - UUID of SupplierStatementFetchingJob
  * @param statusUpdate - Status update payload
  * @returns void
@@ -59,7 +59,7 @@ export async function updateJobStatus(
   jobId: string,
   statusUpdate: UpdateJobStatusRequest
 ): Promise<void> {
-  const url = `${config.railsApiUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}`;
+  const url = `${config.adminApiUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}`;
 
   try {
     await axios.patch(url, statusUpdate, {
@@ -72,11 +72,11 @@ export async function updateJobStatus(
   } catch (error: any) {
     if (error.response) {
       throw new Error(
-        `Rails API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
+        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
       );
     }
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Rails API request timeout');
+      throw new Error('Admin API request timeout');
     }
     throw new Error(`Failed to update job status: ${error.message}`);
   }
@@ -84,8 +84,8 @@ export async function updateJobStatus(
 
 /**
  * Map error message to failure reason enum
- * @param errorMessage - Error message from carrier script
- * @returns Failure reason for Rails
+ * @param errorMessage - Error message from workflow execution
+ * @returns Failure reason for Admin API
  */
 export function mapErrorToFailureReason(
   errorMessage: string

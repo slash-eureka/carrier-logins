@@ -1,17 +1,19 @@
-// Carrier script types
+// Statement types
 export interface Statement {
   pdfUrl: string;
   statementDate: string; // ISO date string (YYYY-MM-DD)
   filename?: string;
 }
 
+// Carrier authentication types
 export interface CarrierCredentials {
   username: string;
   password: string;
   loginUrl: string;
 }
 
-export interface CarrierScriptResult {
+// Workflow types
+export interface WorkflowResult {
   success: boolean;
   statements: Statement[];
   error?: string;
@@ -32,11 +34,19 @@ export interface FetchStatementsResponse {
   job_id: string;
 }
 
+// Workflow job types
+export interface SupplierStatementFetchingJob extends FetchStatementsRequest {
+  // Represents a workflow job for fetching supplier (carrier) statements
+}
+
+export type WorkflowJob = SupplierStatementFetchingJob;
+// Type alias for workflow jobs - can become union type when adding more workflow types
+
 export interface ErrorResponse {
   error: string;
 }
 
-// Rails API types
+// Admin API types
 export interface CloudinaryAttachment {
   public_id: string;
   format: string;
@@ -81,7 +91,7 @@ export interface CloudinaryUploadResult {
 export interface AppConfig {
   port: number;
   apiKey: string;
-  railsApiUrl: string;
+  adminApiUrl: string;
   browserbase: {
     apiKey: string;
     projectId: string;
@@ -96,5 +106,5 @@ export interface AppConfig {
   };
 }
 
-// Carrier identification
-export type CarrierName = 'abacus' | 'advantage-partners' | 'amerisafe' | 'unknown';
+// Carrier identification (using reverse domain notation)
+export type CarrierName = 'net_abacus' | 'com_advantagepartners' | 'com_amerisafe' | 'unknown';

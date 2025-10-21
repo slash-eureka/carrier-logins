@@ -1,6 +1,6 @@
-import { mapErrorToFailureReason } from '../../services/rails-client.js';
+import { mapErrorToFailureReason } from '../../services/admin-api-client.js';
 
-describe('rails-client', () => {
+describe('admin-api-client', () => {
   describe('mapErrorToFailureReason', () => {
     it('should map invalid credentials errors', () => {
       expect(mapErrorToFailureReason('Invalid credentials provided')).toBe('invalid_credentials');

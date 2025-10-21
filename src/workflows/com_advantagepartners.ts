@@ -1,21 +1,23 @@
 /**
- * Advantage Partners carrier automation script
+ * Advantage Partners workflow script
  * Logs into Advantage Partners portal and downloads commission statements
  */
 
-import type { CarrierCredentials, CarrierScriptResult } from '../types/index.js';
+import type { Stagehand } from '@browserbasehq/stagehand';
+import type { WorkflowJob, WorkflowResult } from '../types/index.js';
 
 /**
- * Run carrier automation for Advantage Partners
- * @param page - Stagehand page instance
- * @param credentials - Login credentials
+ * Run workflow for Advantage Partners supplier statement fetching
+ * @param stagehand - Stagehand client instance
+ * @param job - Workflow job with credentials and metadata
  * @returns Promise with success status and statements
  */
-export async function runCarrierAutomation(
-  page: any,
-  credentials: CarrierCredentials
-): Promise<CarrierScriptResult> {
-  const { username, password, loginUrl } = credentials;
+export async function runWorkflow(
+  stagehand: Stagehand,
+  job: WorkflowJob
+): Promise<WorkflowResult> {
+  const { username, password, login_url: loginUrl } = job;
+  const page = stagehand.page;
 
   try {
     // Step 1: Navigate to URL

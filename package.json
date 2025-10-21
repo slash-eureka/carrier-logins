@@ -11,7 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test-carrier": "tsx cli/run-carrier.ts"
+    "test-workflow": "tsx cli/run-workflow.ts"
   },
   "dependencies": {
     "@browserbasehq/stagehand": "^2.5.2",

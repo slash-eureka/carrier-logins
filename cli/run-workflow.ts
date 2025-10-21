@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 /**
- * CLI tool for testing carrier automation scripts
+ * CLI tool for testing carrier workflow scripts
  *
  * Usage:
- *   npm run test-carrier <carrier-name> <username> <password> <loginUrl>
+ *   npm run test-workflow <carrier-name> <username> <password> <loginUrl>
  *
  * Example:
- *   npm run test-carrier abacus myuser mypass https://abacus.com/login
- *   npm run test-carrier advantage-partners user pass https://advantage.com/login
- *   npm run test-carrier amerisafe user pass https://amerisafe.com/login
+ *   npm run test-workflow abacus myuser mypass https://abacus.com/login
+ *   npm run test-workflow advantage-partners user pass https://advantage.com/login
+ *   npm run test-workflow amerisafe user pass https://amerisafe.com/login
  */
 
 import 'dotenv/config';
 import { createStagehandClient } from '../src/lib/stagehand-client.js';
+import type { WorkflowJob } from '../src/types/index.js';
 
-const VALID_CARRIERS = ['abacus', 'advantage-partners', 'amerisafe'] as const;
+const VALID_CARRIERS = ['net_abacus', 'com_advantagepartners', 'com_amerisafe'] as const;
 type CarrierName = typeof VALID_CARRIERS[number];
 
 async function main() {
@@ -25,7 +26,7 @@ async function main() {
     console.error(JSON.stringify({
       success: false,
       error: 'Missing required arguments',
-      usage: 'npm run test-carrier <carrier-name> <username> <password> <loginUrl>',
+      usage: 'npm run test-workflow <carrier-name> <username> <password> <loginUrl>',
       validCarriers: VALID_CARRIERS,
     }));
     process.exit(1);
@@ -43,22 +44,28 @@ async function main() {
 
   let client;
   try {
-    // Import the carrier script dynamically
-    const carrierModule = await import(`../src/carriers/${carrierName}.js`);
+    // Import the workflow script dynamically
+    const workflowModule = await import(`../src/workflows/${carrierName}.js`);
 
-    if (typeof carrierModule.runCarrierAutomation !== 'function') {
-      throw new Error(`Carrier script ${carrierName} does not export runCarrierAutomation function`);
+    if (typeof workflowModule.runWorkflow !== 'function') {
+      throw new Error(`Workflow script ${carrierName} does not export runWorkflow function`);
     }
 
     // Create Stagehand client
     client = await createStagehandClient();
 
-    // Run the carrier automation
-    const result = await carrierModule.runCarrierAutomation(client.page, {
+    // Create workflow job object
+    const job: WorkflowJob = {
+      job_id: 'cli-test-' + Date.now(),
+      organization_id: 'cli-test-org',
       username,
       password,
-      loginUrl,
-    });
+      login_url: loginUrl,
+      accounting_period_start_date: '1970-01-01', // Get all statements for CLI testing
+    };
+
+    // Run the workflow
+    const result = await workflowModule.runWorkflow(client.stagehand, job);
 
     // Output result as JSON
     console.log(JSON.stringify(result, null, 2));

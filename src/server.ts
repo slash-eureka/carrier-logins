@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { config, validateConfig } from './config/index.js';
 import { authenticateApiKey } from './middleware/auth.js';
-import { runCarrierAutomation, identifyCarrier } from './services/carrier-script-manager.js';
+import { runWorkflow, identifyCarrier } from './services/workflow-manager.js';
 import { processStatements } from './services/statement-processor.js';
-import { createInboxStatements, updateJobStatus, mapErrorToFailureReason } from './services/rails-client.js';
+import { createInboxStatements, updateJobStatus, mapErrorToFailureReason } from './services/admin-api-client.js';
 import type { FetchStatementsRequest, FetchStatementsResponse, ErrorResponse } from './types/index.js';
 
 // Validate configuration on startup
@@ -59,30 +59,27 @@ app.post('/api/v1/fetch-statements', authenticateApiKey, async (req, res) => {
   res.status(202).json(response);
 
   // Process job asynchronously in background
-  processJobAsync(job_id, organization_id, { username, password, loginUrl: login_url }, accounting_period_start_date);
+  processJobAsync(req.body as FetchStatementsRequest);
 });
 
 /**
  * Process job asynchronously
  */
-async function processJobAsync(
-  jobId: string,
-  organizationId: string,
-  credentials: { username: string; password: string; loginUrl: string },
-  accountingPeriodStartDate: string
-): Promise<void> {
+async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
+  const { job_id: jobId, organization_id: organizationId, login_url, accounting_period_start_date: accountingPeriodStartDate } = job;
+
   try {
     console.log(`[Job ${jobId}] Starting processing...`);
 
     // Identify carrier
-    const carrierName = identifyCarrier(credentials.loginUrl);
+    const carrierName = identifyCarrier(login_url);
     console.log(`[Job ${jobId}] Identified carrier: ${carrierName}`);
 
-    // Run carrier automation
-    const result = await runCarrierAutomation(credentials);
+    // Run workflow
+    const result = await runWorkflow(job);
 
     if (!result.success) {
-      console.error(`[Job ${jobId}] Carrier automation failed:`, result.error);
+      console.error(`[Job ${jobId}] Workflow failed:`, result.error);
 
       // Update job status to failed
       await updateJobStatus(jobId, {
@@ -94,7 +91,7 @@ async function processJobAsync(
       return;
     }
 
-    console.log(`[Job ${jobId}] Carrier automation succeeded. Found ${result.statements.length} statements.`);
+    console.log(`[Job ${jobId}] Workflow succeeded. Found ${result.statements.length} statements.`);
 
     // Process statements (filter by date, download PDFs, upload to Cloudinary)
     const attachments = await processStatements(
@@ -106,9 +103,9 @@ async function processJobAsync(
     console.log(`[Job ${jobId}] Processed ${attachments.length} statements after date filtering and upload.`);
 
     if (attachments.length > 0) {
-      // Create inbox statements in Rails
-      const railsResponse = await createInboxStatements(jobId, organizationId, attachments);
-      console.log(`[Job ${jobId}] Created ${railsResponse.inbox_item_ids.length} inbox items in Rails.`);
+      // Create inbox statements via Admin API
+      const adminApiResponse = await createInboxStatements(jobId, organizationId, attachments);
+      console.log(`[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`);
 
       // Update job status to success
       await updateJobStatus(jobId, {
@@ -129,14 +126,14 @@ async function processJobAsync(
     console.error(`[Job ${jobId}] Error during processing:`, error);
 
     try {
-      // Try to update Rails with failure status
+      // Try to update Admin API with failure status
       await updateJobStatus(jobId, {
         status: 'failed',
         failure_reason: mapErrorToFailureReason(error.message),
         notes: error.message,
       });
-    } catch (railsError: any) {
-      console.error(`[Job ${jobId}] Failed to update Rails job status:`, railsError.message);
+    } catch (adminApiError: any) {
+      console.error(`[Job ${jobId}] Failed to update Admin API job status:`, adminApiError.message);
     }
   }
 }
@@ -152,7 +149,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 const PORT = config.port;
 app.listen(PORT, () => {
-  console.log(`Carrier logins service running on port ${PORT}`);
+  console.log(`Carrier workflow service running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
