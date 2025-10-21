@@ -34,14 +34,10 @@ export async function processStatement(
     throw new Error('Statement has no PDF URL');
   }
 
-  // Download PDF
   const pdfBuffer = await downloadPdf(statement.pdfUrl);
-
-  // Extract filename
   const filename = statement.filename || extractFilename(statement.pdfUrl);
 
-  // Upload to Cloudinary
-  const uploadResult = await uploadPdf(pdfBuffer, {
+  const attachment = await uploadPdf(pdfBuffer, {
     carrierName,
     filename,
     metadata: {
@@ -50,14 +46,7 @@ export async function processStatement(
     },
   });
 
-  // Return attachment metadata for Rails
-  return {
-    public_id: uploadResult.public_id,
-    format: uploadResult.format,
-    url: uploadResult.secure_url || uploadResult.url,
-    title: filename,
-    etag: uploadResult.etag,
-  };
+  return attachment;
 }
 
 /**

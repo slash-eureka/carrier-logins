@@ -18,10 +18,7 @@
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/**/*",
-    "abacus.js",
-    "advantage-partners.ts",
-    "amerisafe.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",

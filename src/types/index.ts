@@ -77,16 +77,6 @@ export interface UpdateJobStatusRequest {
   notes?: string;
 }
 
-// Cloudinary upload result
-export interface CloudinaryUploadResult {
-  public_id: string;
-  format: string;
-  url: string;
-  etag: string;
-  secure_url: string;
-  resource_type: string;
-}
-
 // Configuration types
 export interface AppConfig {
   port: number;
