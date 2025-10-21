@@ -1,7 +1,7 @@
 // Set up test environment variables
 process.env.PORT = '3000';
-process.env.API_KEY = 'test-api-key';
-process.env.ADMIN_API_URL = 'https://test-admin-api.com';
+process.env.ADMIN_API_KEY = 'test-admin-api-key';
+process.env.ADMIN_API_BASE_URL = 'https://test-admin-api.com';
 process.env.BROWSERBASE_API_KEY = 'test-browserbase-key';
 process.env.BROWSERBASE_PROJECT_ID = 'test-project-id';
 process.env.GEMINI_API_KEY = 'test-gemini-key';

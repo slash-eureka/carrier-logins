@@ -54,6 +54,7 @@ function extractReverseDomainSlug(hostname: string): string {
 function getCanonicalCarrierSlug(slug: string): CarrierName {
   switch (slug) {
     case 'net_abacus':
+    case 'com_abacus':
       return 'net_abacus';
 
     case 'com_advantage':

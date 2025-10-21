@@ -15,7 +15,7 @@ export function authenticateApiKey(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  if (apiKey !== config.apiKey) {
+  if (apiKey !== config.adminApi.apiKey) {
     res.status(401).json({
       error: 'Invalid API key',
     });

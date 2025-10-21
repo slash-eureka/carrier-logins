@@ -90,8 +90,10 @@ export interface CloudinaryUploadResult {
 // Configuration types
 export interface AppConfig {
   port: number;
-  apiKey: string;
-  adminApiUrl: string;
+  adminApi: {
+    apiKey: string;
+    baseUrl: string;
+  };
   browserbase: {
     apiKey: string;
     projectId: string;
