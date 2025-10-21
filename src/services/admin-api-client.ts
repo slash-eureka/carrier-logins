@@ -19,7 +19,7 @@ export async function createInboxStatements(
   organizationId: string,
   attachments: CloudinaryAttachment[]
 ): Promise<CreateInboxStatementsResponse> {
-  const url = `${config.adminApi.baseUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
+  const url = `${config.adminApi.baseUrl}/internal/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
 
   const payload: CreateInboxStatementsRequest = {
     organization_id: organizationId,
@@ -30,9 +30,9 @@ export async function createInboxStatements(
     const response = await axios.post<CreateInboxStatementsResponse>(url, payload, {
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': config.adminApi.apiKey,
+        'Authorization': `Bearer ${config.adminApi.apiKey}`,
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30000,
     });
 
     return response.data;
@@ -59,15 +59,15 @@ export async function updateJobStatus(
   jobId: string,
   statusUpdate: UpdateJobStatusRequest
 ): Promise<void> {
-  const url = `${config.adminApi.baseUrl}/admin/supplier_statement_fetching_jobs_admin/${jobId}`;
+  const url = `${config.adminApi.baseUrl}/internal/supplier_statement_fetching_jobs_admin/${jobId}`;
 
   try {
     await axios.patch(url, statusUpdate, {
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': config.adminApi.apiKey,
+        'Authorization': `Bearer ${config.adminApi.apiKey}`,
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 30000,
     });
   } catch (error: any) {
     if (error.response) {
