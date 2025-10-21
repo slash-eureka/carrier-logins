@@ -11,6 +11,7 @@ function getEnvVar(name: string, required: boolean = true): string {
 
 export const config: AppConfig = {
   port: parseInt(getEnvVar('PORT', false) || '3000', 10),
+  apiKey: getEnvVar('API_KEY'),
   adminApi: {
     apiKey: getEnvVar('ADMIN_API_KEY'),
     baseUrl: getEnvVar('ADMIN_API_BASE_URL'),
@@ -32,6 +33,7 @@ export const config: AppConfig = {
 // Validate config on load
 export function validateConfig(): void {
   const requiredFields = [
+    'apiKey',
     'adminApi.apiKey',
     'adminApi.baseUrl',
     'browserbase.apiKey',

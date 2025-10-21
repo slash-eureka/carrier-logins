@@ -4,9 +4,7 @@ import { authenticateApiKey } from '../../middleware/auth.js';
 // Mock config
 jest.mock('../../config/index.js', () => ({
   config: {
-    adminApi: {
-      apiKey: 'test-api-key-123',
-    },
+    apiKey: 'test-api-key-123',
   },
 }));
 
