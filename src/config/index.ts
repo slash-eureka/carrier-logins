@@ -10,7 +10,7 @@ function getEnvVar(name: string, required: boolean = true): string {
 }
 
 export const config: AppConfig = {
-  port: parseInt(getEnvVar('PORT', false) || '3000', 10),
+  port: parseInt(getEnvVar('PORT', false) || '3003', 10),
   apiKey: getEnvVar('API_KEY'),
   adminApi: {
     apiKey: getEnvVar('ADMIN_API_KEY'),

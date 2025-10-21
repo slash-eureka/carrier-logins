@@ -30,7 +30,7 @@ Run the API server in development mode (with hot reload):
 npm run dev
 ```
 
-The server will start on port 3000 (or the PORT specified in .env).
+The server will start on port 3003 (or the PORT specified in .env).
 
 ### Testing
 
