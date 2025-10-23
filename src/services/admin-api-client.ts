@@ -10,19 +10,16 @@ import type {
 /**
  * Create inbox statements via Admin API
  * @param jobId - UUID of SupplierStatementFetchingJob
- * @param organizationId - UUID of Organization
  * @param attachments - Array of Cloudinary attachments
  * @returns Response from Admin API
  */
 export async function createInboxStatements(
   jobId: string,
-  organizationId: string,
   attachments: CloudinaryAttachment[]
 ): Promise<CreateInboxStatementsResponse> {
   const url = `${config.adminApi.baseUrl}/internal/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
 
   const payload: CreateInboxStatementsRequest = {
-    organization_id: organizationId,
     attachments,
   };
 

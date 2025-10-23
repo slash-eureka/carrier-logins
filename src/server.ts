@@ -25,30 +25,30 @@ app.get('/health', (req, res) => {
 app.post('/api/v1/fetch-statements', authenticateApiKey, async (req, res) => {
   const {
     job_id,
-    organization_id,
-    username,
-    password,
-    login_url,
+    credential,
     accounting_period_start_date,
   } = req.body as FetchStatementsRequest;
 
   // Validate required fields
-  const requiredFields = [
-    'job_id',
-    'organization_id',
-    'username',
-    'password',
-    'login_url',
-    'accounting_period_start_date',
-  ];
+  if (!job_id) {
+    res.status(400).json({
+      error: 'Missing required field: job_id',
+    } as ErrorResponse);
+    return;
+  }
 
-  for (const field of requiredFields) {
-    if (!req.body[field]) {
-      res.status(400).json({
-        error: `Missing required field: ${field}`,
-      } as ErrorResponse);
-      return;
-    }
+  if (!credential || !credential.username || !credential.password || !credential.login_url) {
+    res.status(400).json({
+      error: 'Missing required field: credential (must include username, password, and login_url)',
+    } as ErrorResponse);
+    return;
+  }
+
+  if (!accounting_period_start_date) {
+    res.status(400).json({
+      error: 'Missing required field: accounting_period_start_date',
+    } as ErrorResponse);
+    return;
   }
 
   // Respond immediately with 202 Accepted
@@ -66,13 +66,13 @@ app.post('/api/v1/fetch-statements', authenticateApiKey, async (req, res) => {
  * Process job asynchronously
  */
 async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
-  const { job_id: jobId, organization_id: organizationId, login_url, accounting_period_start_date: accountingPeriodStartDate } = job;
+  const { job_id: jobId, credential, accounting_period_start_date: accountingPeriodStartDate } = job;
 
   try {
     console.log(`[Job ${jobId}] Starting processing...`);
 
     // Identify carrier
-    const carrierName = identifyCarrier(login_url);
+    const carrierName = identifyCarrier(credential.login_url);
     console.log(`[Job ${jobId}] Identified carrier: ${carrierName}`);
 
     // Run workflow
@@ -104,7 +104,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
 
     if (attachments.length > 0) {
       // Create inbox statements via Admin API
-      const adminApiResponse = await createInboxStatements(jobId, organizationId, attachments);
+      const adminApiResponse = await createInboxStatements(jobId, attachments);
       console.log(`[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`);
 
       // Update job status to success

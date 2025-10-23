@@ -83,7 +83,7 @@ export async function executeWorkflow(
     return {
       success: false,
       statements: [],
-      error: `Unknown carrier for URL: ${job.login_url}`,
+      error: `Unknown carrier for URL: ${job.credential.login_url}`,
     };
   }
 
@@ -146,6 +146,6 @@ export async function executeWorkflow(
 export async function runWorkflow(
   job: WorkflowJob
 ): Promise<WorkflowResult> {
-  const carrierName = identifyCarrier(job.login_url);
+  const carrierName = identifyCarrier(job.credential.login_url);
   return executeWorkflow(carrierName, job);
 }

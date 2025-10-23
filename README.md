@@ -86,3 +86,9 @@ The script will output JSON with the workflow results.
 
 **GET /health** - Health check endpoint
 - Returns: `200 OK` with timestamp
+
+
+### TODO
+- Capture cloudinary etags to avoid duplicate statements
+- Include last retrieved statement identifier in the fetch-statements request
+

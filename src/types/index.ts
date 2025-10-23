@@ -9,7 +9,7 @@ export interface Statement {
 export interface CarrierCredentials {
   username: string;
   password: string;
-  loginUrl: string;
+  login_url: string;
 }
 
 // Workflow types
@@ -22,10 +22,7 @@ export interface WorkflowResult {
 // API request/response types
 export interface FetchStatementsRequest {
   job_id: string;
-  organization_id: string;
-  username: string;
-  password: string;
-  login_url: string;
+  credential: CarrierCredentials;
   accounting_period_start_date: string; // ISO date (YYYY-MM-DD)
 }
 
@@ -56,7 +53,6 @@ export interface CloudinaryAttachment {
 }
 
 export interface CreateInboxStatementsRequest {
-  organization_id: string;
   attachments: CloudinaryAttachment[];
 }
 
