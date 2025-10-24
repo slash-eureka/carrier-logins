@@ -30,7 +30,6 @@ export const config: AppConfig = {
   },
 };
 
-// Validate config on load
 export function validateConfig(): void {
   const requiredFields = [
     'apiKey',

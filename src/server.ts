@@ -63,7 +63,7 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
   };
   res.status(202).json(response);
 
-  processJobAsync(req.body as FetchStatementsRequest);
+  void processJobAsync(req.body as FetchStatementsRequest);
 });
 
 async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
@@ -152,7 +152,7 @@ app.use(
     err: Error,
     req: express.Request,
     res: express.Response,
-    next: express.NextFunction,
+    _next: express.NextFunction,
   ) => {
     console.error('Unhandled error:', err);
     res.status(500).json({

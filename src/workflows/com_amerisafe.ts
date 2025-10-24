@@ -17,7 +17,8 @@ export async function runWorkflow(
   stagehand: Stagehand,
   job: WorkflowJob,
 ): Promise<WorkflowResult> {
-  const { username, password, login_url: loginUrl } = job.credential;
+  const { username: _username, password: _password, login_url: loginUrl } =
+    job.credential;
   const page = stagehand.page;
 
   try {

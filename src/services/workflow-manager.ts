@@ -1,29 +1,28 @@
 import { createStagehandClient } from '../lib/stagehand-client.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 import type {
-  CarrierName,
+  CarrierSlug,
   WorkflowJob,
   WorkflowResult,
 } from '../types/index.js';
 
+const KNOWN_CARRIERS = new Set([
+  'net_abacus',
+  'com_advantagepartners',
+  'com_amerisafe',
+]);
+
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
  * @param loginUrl - The carrier's login URL
- * @returns Carrier name in reverse domain notation (e.g., "net_abacus")
+ * @returns Carrier slug in reverse domain notation (e.g., "net_abacus")
  */
-export function identify(loginUrl: string): CarrierName {
+export function identify(loginUrl: string): CarrierSlug {
   try {
     const url = new URL(loginUrl);
     const hostname = url.hostname.toLowerCase();
-
-    // Extract reverse domain slug (TLD + domain name)
-    const carrierSlug = extractReverseDomainSlug(hostname);
-
-    // Map reverse domain slugs to canonical carrier names
-    // Some carriers may have multiple domains, so we normalize to canonical slug
-    const canonicalSlug = getCanonicalCarrierSlug(carrierSlug);
-
-    return canonicalSlug;
+    const slug = extractReverseDomainSlug(hostname);
+    return KNOWN_CARRIERS.has(slug) ? (slug as CarrierSlug) : 'unknown';
   } catch {
     return 'unknown';
   }
@@ -51,40 +50,16 @@ function extractReverseDomainSlug(hostname: string): string {
 }
 
 /**
- * Map reverse domain slugs to canonical carrier names
- * Handles cases where carriers use multiple domains
- * @param slug - Reverse domain slug (e.g., "net_abacus" or "com_abacus")
- * @returns Canonical carrier name
- */
-function getCanonicalCarrierSlug(slug: string): CarrierName {
-  switch (slug) {
-    case 'net_abacus':
-    case 'com_abacus':
-      return 'net_abacus';
-
-    case 'com_advantage':
-    case 'com_advantagepartners':
-      return 'com_advantagepartners';
-
-    case 'com_amerisafe':
-      return 'com_amerisafe';
-
-    default:
-      return 'unknown';
-  }
-}
-
-/**
  * Execute workflow for a carrier
- * @param carrierName - Name of the carrier
+ * @param carrierSlug - Carrier slug in reverse domain notation
  * @param job - Workflow job with credentials and metadata
  * @returns Promise with workflow result
  */
 export async function executeWorkflow(
-  carrierName: CarrierName,
+  carrierSlug: CarrierSlug,
   job: WorkflowJob,
 ): Promise<WorkflowResult> {
-  if (carrierName === 'unknown') {
+  if (carrierSlug === 'unknown') {
     return {
       success: false,
       statements: [],
@@ -94,15 +69,10 @@ export async function executeWorkflow(
 
   let client;
   try {
-    // Create Stagehand client
     client = await createStagehandClient();
 
-    // Import and execute workflow script
-    let workflowModule: {
-      runWorkflow: typeof import('../workflows/net_abacus.js').runWorkflow;
-    };
-
-    switch (carrierName) {
+    let workflowModule;
+    switch (carrierSlug) {
       case 'net_abacus':
         workflowModule = await import('../workflows/net_abacus.js');
         break;
@@ -119,11 +89,10 @@ export async function executeWorkflow(
         return {
           success: false,
           statements: [],
-          error: `No workflow script implemented for carrier: ${carrierName}`,
+          error: `No workflow script implemented for carrier: ${carrierSlug}`,
         };
     }
 
-    // Execute workflow
     const result = await workflowModule.runWorkflow(client.stagehand, job);
     return result;
   } catch (error: unknown) {
@@ -133,7 +102,6 @@ export async function executeWorkflow(
       error: `Failed to execute workflow: ${getErrorMessage(error)}`,
     };
   } finally {
-    // Always close the Stagehand client
     if (client) {
       try {
         await client.close();
@@ -150,6 +118,6 @@ export async function executeWorkflow(
  * @returns Promise with workflow result
  */
 export async function run(job: WorkflowJob): Promise<WorkflowResult> {
-  const carrierName = identify(job.credential.login_url);
-  return executeWorkflow(carrierName, job);
+  const carrierSlug = identify(job.credential.login_url);
+  return executeWorkflow(carrierSlug, job);
 }

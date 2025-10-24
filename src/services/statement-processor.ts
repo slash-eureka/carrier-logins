@@ -4,7 +4,7 @@ import { getErrorMessage } from '../lib/error-utils.js';
 import type {
   Statement,
   CloudinaryAttachment,
-  CarrierName,
+  CarrierSlug,
 } from '../types/index.js';
 
 /**
@@ -28,12 +28,12 @@ export function filterStatementsByDate(
 /**
  * Process and upload a single statement to Cloudinary
  * @param statement - Statement to process
- * @param carrierName - Name of the carrier
+ * @param carrierSlug - Carrier slug in reverse domain notation
  * @returns Cloudinary attachment metadata
  */
 export async function processStatement(
   statement: Statement,
-  carrierName: CarrierName,
+  carrierSlug: CarrierSlug,
 ): Promise<CloudinaryAttachment> {
   if (!statement.pdfUrl) {
     throw new Error('Statement has no PDF URL');
@@ -43,11 +43,11 @@ export async function processStatement(
   const filename = statement.filename || extractFilename(statement.pdfUrl);
 
   const attachment = await uploadPdf(pdfBuffer, {
-    carrierName,
+    carrierName: carrierSlug,
     filename,
     metadata: {
       statement_date: statement.statementDate,
-      carrier: carrierName,
+      carrier: carrierSlug,
     },
   });
 
@@ -57,13 +57,13 @@ export async function processStatement(
 /**
  * Process multiple statements
  * @param statements - Array of statements
- * @param carrierName - Name of the carrier
+ * @param carrierSlug - Carrier slug in reverse domain notation
  * @param accountingPeriodStartDate - ISO date string to filter statements
  * @returns Array of Cloudinary attachments
  */
 export async function processStatements(
   statements: Statement[],
-  carrierName: CarrierName,
+  carrierSlug: CarrierSlug,
   accountingPeriodStartDate: string,
 ): Promise<CloudinaryAttachment[]> {
   // Filter statements by date
@@ -81,7 +81,7 @@ export async function processStatements(
 
   for (const statement of filteredStatements) {
     try {
-      const attachment = await processStatement(statement, carrierName);
+      const attachment = await processStatement(statement, carrierSlug);
       attachments.push(attachment);
     } catch (error: unknown) {
       console.error(

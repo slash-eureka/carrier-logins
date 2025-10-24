@@ -37,7 +37,7 @@ export async function runWorkflow(
         ) {
           pdfUrl = url;
         }
-      } catch (err) {
+      } catch {
         // Try to get URL even if page didn't fully load
         const url = newPage.url();
         if (

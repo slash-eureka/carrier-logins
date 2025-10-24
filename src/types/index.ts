@@ -94,7 +94,7 @@ export interface AppConfig {
   };
 }
 
-export type CarrierName =
+export type CarrierSlug =
   | 'net_abacus'
   | 'com_advantagepartners'
   | 'com_amerisafe'

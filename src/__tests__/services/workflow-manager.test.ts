@@ -6,16 +6,16 @@ describe('workflow-manager', () => {
       expect(workflow.identify('https://portal.abacus.net/login')).toBe(
         'net_abacus',
       );
-      expect(workflow.identify('https://abacus.com/login')).toBe('net_abacus');
+      expect(workflow.identify('https://abacus.net/login')).toBe('net_abacus');
     });
 
     it('should identify com_advantagepartners carrier', () => {
-      expect(workflow.identify('https://advantage.com/login')).toBe(
-        'com_advantagepartners',
-      );
       expect(workflow.identify('https://advantagepartners.com/login')).toBe(
         'com_advantagepartners',
       );
+      expect(
+        workflow.identify('https://portal.advantagepartners.com/login'),
+      ).toBe('com_advantagepartners');
     });
 
     it('should identify com_amerisafe carrier', () => {
