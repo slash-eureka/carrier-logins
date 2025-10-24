@@ -14,7 +14,7 @@ import type { WorkflowJob, WorkflowResult } from '../types/index.js';
  */
 export async function runWorkflow(
   stagehand: Stagehand,
-  job: WorkflowJob
+  job: WorkflowJob,
 ): Promise<WorkflowResult> {
   const { username, password, login_url: loginUrl } = job.credential;
   const page = stagehand.page;
@@ -34,7 +34,9 @@ export async function runWorkflow(
 
     // Step 5-8: Click the most recent statement date link
     // Note: The original script had hardcoded dates, now using AI to find most recent
-    await page.act(`click the statement date link with the most recent date in the table`);
+    await page.act(
+      `click the statement date link with the most recent date in the table`,
+    );
 
     // TODO: Capture the downloaded PDF URL
     // For now, return empty statements - will be enhanced when download capture is implemented

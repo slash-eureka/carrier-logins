@@ -1,4 +1,8 @@
-import { v2 as cloudinary, UploadApiResponse, UploadApiOptions } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiOptions,
+} from 'cloudinary';
 import { config } from '../config/index.js';
 import type { CloudinaryAttachment } from '../types/index.js';
 
@@ -43,7 +47,7 @@ function buildPublicId(carrierName: string, filename: string): string {
  */
 function buildUploadOptions(
   publicId: string,
-  options: UploadOptions
+  options: UploadOptions,
 ): UploadApiOptions {
   const {
     carrierName,
@@ -87,7 +91,7 @@ function buildUploadOptions(
  */
 export async function uploadPdf(
   buffer: Buffer,
-  options: UploadOptions
+  options: UploadOptions,
 ): Promise<CloudinaryAttachment> {
   const { carrierName, filename } = options;
   const publicId = buildPublicId(carrierName, filename);
@@ -102,8 +106,8 @@ export async function uploadPdf(
           const errorCode = error.http_code || 'UNKNOWN';
           reject(
             new Error(
-              `Cloudinary upload failed [${errorCode}]: ${errorMessage}`
-            )
+              `Cloudinary upload failed [${errorCode}]: ${errorMessage}`,
+            ),
           );
           return;
         }
@@ -114,7 +118,7 @@ export async function uploadPdf(
         }
 
         resolve(mapToAttachment(result, filename));
-      }
+      },
     );
 
     uploadStream.end(buffer);
@@ -130,7 +134,7 @@ export async function uploadPdf(
  */
 function mapToAttachment(
   result: UploadApiResponse,
-  filename: string
+  filename: string,
 ): CloudinaryAttachment {
   return {
     public_id: result.public_id,
@@ -152,7 +156,10 @@ function mapToAttachment(
  * const url = getCloudinaryUrl('supplier_statements/net_abacus/statement_2024-01', 'pdf');
  * // Returns: 'https://res.cloudinary.com/{cloud}/raw/upload/supplier_statements/net_abacus/statement_2024-01.pdf'
  */
-export function getCloudinaryUrl(publicId: string, format: string = 'pdf'): string {
+export function getCloudinaryUrl(
+  publicId: string,
+  format: string = 'pdf',
+): string {
   return cloudinary.url(publicId, {
     resource_type: 'raw',
     format,

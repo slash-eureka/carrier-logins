@@ -1,6 +1,10 @@
 import { downloadPdf, extractFilename } from '../lib/pdf-downloader.js';
 import { uploadPdf } from '../lib/cloudinary-service.js';
-import type { Statement, CloudinaryAttachment, CarrierName } from '../types/index.js';
+import type {
+  Statement,
+  CloudinaryAttachment,
+  CarrierName,
+} from '../types/index.js';
 
 /**
  * Filter statements by accounting period start date
@@ -10,7 +14,7 @@ import type { Statement, CloudinaryAttachment, CarrierName } from '../types/inde
  */
 export function filterStatementsByDate(
   statements: Statement[],
-  accountingPeriodStartDate: string
+  accountingPeriodStartDate: string,
 ): Statement[] {
   const cutoffDate = new Date(accountingPeriodStartDate);
 
@@ -28,7 +32,7 @@ export function filterStatementsByDate(
  */
 export async function processStatement(
   statement: Statement,
-  carrierName: CarrierName
+  carrierName: CarrierName,
 ): Promise<CloudinaryAttachment> {
   if (!statement.pdfUrl) {
     throw new Error('Statement has no PDF URL');
@@ -59,10 +63,13 @@ export async function processStatement(
 export async function processStatements(
   statements: Statement[],
   carrierName: CarrierName,
-  accountingPeriodStartDate: string
+  accountingPeriodStartDate: string,
 ): Promise<CloudinaryAttachment[]> {
   // Filter statements by date
-  const filteredStatements = filterStatementsByDate(statements, accountingPeriodStartDate);
+  const filteredStatements = filterStatementsByDate(
+    statements,
+    accountingPeriodStartDate,
+  );
 
   if (filteredStatements.length === 0) {
     return [];
@@ -76,7 +83,10 @@ export async function processStatements(
       const attachment = await processStatement(statement, carrierName);
       attachments.push(attachment);
     } catch (error: any) {
-      console.error(`Failed to process statement ${statement.filename}:`, error.message);
+      console.error(
+        `Failed to process statement ${statement.filename}:`,
+        error.message,
+      );
       // Continue processing other statements
     }
   }

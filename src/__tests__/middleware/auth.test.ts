@@ -31,7 +31,7 @@ describe('auth middleware', () => {
       authenticateApiKey(
         mockRequest as Request,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(mockNext).toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('auth middleware', () => {
       authenticateApiKey(
         mockRequest as Request,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
@@ -60,7 +60,7 @@ describe('auth middleware', () => {
       authenticateApiKey(
         mockRequest as Request,
         mockResponse as Response,
-        mockNext
+        mockNext,
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);

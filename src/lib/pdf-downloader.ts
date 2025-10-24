@@ -20,10 +20,14 @@ export async function downloadPdf(url: string): Promise<Buffer> {
     return Buffer.from(response.data);
   } catch (error: any) {
     if (error.code === 'ECONNABORTED') {
-      throw new Error('PDF download timeout - file may be too large or server is slow');
+      throw new Error(
+        'PDF download timeout - file may be too large or server is slow',
+      );
     }
     if (error.response) {
-      throw new Error(`Failed to download PDF: HTTP ${error.response.status} ${error.response.statusText}`);
+      throw new Error(
+        `Failed to download PDF: HTTP ${error.response.status} ${error.response.statusText}`,
+      );
     }
     throw new Error(`Failed to download PDF: ${error.message}`);
   }
@@ -35,7 +39,10 @@ export async function downloadPdf(url: string): Promise<Buffer> {
  * @param fallbackName Fallback filename if URL doesn't contain one
  * @returns Filename with .pdf extension
  */
-export function extractFilename(url: string, fallbackName: string = 'statement'): string {
+export function extractFilename(
+  url: string,
+  fallbackName: string = 'statement',
+): string {
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;

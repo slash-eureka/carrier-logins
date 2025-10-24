@@ -69,7 +69,12 @@ export interface CreateInboxStatementsResponse {
 
 export interface UpdateJobStatusRequest {
   status: 'success' | 'failed';
-  failure_reason?: 'invalid_credentials' | 'requires_mfa' | 'carrier_unavailable' | 'missing_instruction' | 'password_change';
+  failure_reason?:
+    | 'invalid_credentials'
+    | 'requires_mfa'
+    | 'carrier_unavailable'
+    | 'missing_instruction'
+    | 'password_change';
   notes?: string;
 }
 
@@ -96,4 +101,8 @@ export interface AppConfig {
 }
 
 // Carrier identification (using reverse domain notation)
-export type CarrierName = 'net_abacus' | 'com_advantagepartners' | 'com_amerisafe' | 'unknown';
+export type CarrierName =
+  | 'net_abacus'
+  | 'com_advantagepartners'
+  | 'com_amerisafe'
+  | 'unknown';

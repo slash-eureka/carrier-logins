@@ -11,7 +11,12 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "workflow": "tsx cli/run-workflow.ts"
+    "workflow": "tsx cli/run-workflow.ts",
+    "lint": "eslint src cli --ext .ts",
+    "lint:fix": "eslint src cli --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"cli/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"cli/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@browserbasehq/stagehand": "^2.5.2",
@@ -27,7 +32,13 @@
     "@types/jest": "^29.5.11",
     "@types/node": "^20.11.0",
     "@types/supertest": "^6.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "jest": "^29.7.0",
+    "prettier": "^3.6.2",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.1",
     "tsx": "^4.7.1",

@@ -4,8 +4,16 @@ import { config, validateConfig } from './config/index.js';
 import { authenticateApiKey } from './middleware/auth.js';
 import { runWorkflow, identifyCarrier } from './services/workflow-manager.js';
 import { processStatements } from './services/statement-processor.js';
-import { createInboxStatements, updateJobStatus, mapErrorToFailureReason } from './services/admin-api-client.js';
-import type { FetchStatementsRequest, FetchStatementsResponse, ErrorResponse } from './types/index.js';
+import {
+  createInboxStatements,
+  updateJobStatus,
+  mapErrorToFailureReason,
+} from './services/admin-api-client.js';
+import type {
+  FetchStatementsRequest,
+  FetchStatementsResponse,
+  ErrorResponse,
+} from './types/index.js';
 
 // Validate configuration on startup
 validateConfig();
@@ -23,11 +31,8 @@ app.get('/health', (req, res) => {
 
 // Create job endpoint
 app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
-  const {
-    job_id,
-    credential,
-    accounting_period_start_date,
-  } = req.body as FetchStatementsRequest;
+  const { job_id, credential, accounting_period_start_date } =
+    req.body as FetchStatementsRequest;
 
   // Validate required fields
   if (!job_id) {
@@ -37,9 +42,15 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
     return;
   }
 
-  if (!credential || !credential.username || !credential.password || !credential.login_url) {
+  if (
+    !credential ||
+    !credential.username ||
+    !credential.password ||
+    !credential.login_url
+  ) {
     res.status(400).json({
-      error: 'Missing required field: credential (must include username, password, and login_url)',
+      error:
+        'Missing required field: credential (must include username, password, and login_url)',
     } as ErrorResponse);
     return;
   }
@@ -66,7 +77,11 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
  * Process job asynchronously
  */
 async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
-  const { job_id: jobId, credential, accounting_period_start_date: accountingPeriodStartDate } = job;
+  const {
+    job_id: jobId,
+    credential,
+    accounting_period_start_date: accountingPeriodStartDate,
+  } = job;
 
   try {
     console.log(`[Job ${jobId}] Starting processing...`);
@@ -84,28 +99,36 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
       // Update job status to failed
       await updateJobStatus(jobId, {
         status: 'failed',
-        failure_reason: mapErrorToFailureReason(result.error || 'Unknown error'),
+        failure_reason: mapErrorToFailureReason(
+          result.error || 'Unknown error',
+        ),
         notes: result.error,
       });
 
       return;
     }
 
-    console.log(`[Job ${jobId}] Workflow succeeded. Found ${result.statements.length} statements.`);
+    console.log(
+      `[Job ${jobId}] Workflow succeeded. Found ${result.statements.length} statements.`,
+    );
 
     // Process statements (filter by date, download PDFs, upload to Cloudinary)
     const attachments = await processStatements(
       result.statements,
       carrierName,
-      accountingPeriodStartDate
+      accountingPeriodStartDate,
     );
 
-    console.log(`[Job ${jobId}] Processed ${attachments.length} statements after date filtering and upload.`);
+    console.log(
+      `[Job ${jobId}] Processed ${attachments.length} statements after date filtering and upload.`,
+    );
 
     if (attachments.length > 0) {
       // Create inbox statements via Admin API
       const adminApiResponse = await createInboxStatements(jobId, attachments);
-      console.log(`[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`);
+      console.log(
+        `[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`,
+      );
 
       // Update job status to success
       await updateJobStatus(jobId, {
@@ -121,7 +144,6 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     }
 
     console.log(`[Job ${jobId}] Processing completed successfully.`);
-
   } catch (error: any) {
     console.error(`[Job ${jobId}] Error during processing:`, error);
 
@@ -133,18 +155,28 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
         notes: error.message,
       });
     } catch (adminApiError: any) {
-      console.error(`[Job ${jobId}] Failed to update Admin API job status:`, adminApiError.message);
+      console.error(
+        `[Job ${jobId}] Failed to update Admin API job status:`,
+        adminApiError.message,
+      );
     }
   }
 }
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-  } as ErrorResponse);
-});
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+      error: 'Internal server error',
+    } as ErrorResponse);
+  },
+);
 
 // Start server
 const PORT = config.port;

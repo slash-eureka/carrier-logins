@@ -1,5 +1,9 @@
 import { createStagehandClient } from '../lib/stagehand-client.js';
-import type { CarrierName, WorkflowJob, WorkflowResult } from '../types/index.js';
+import type {
+  CarrierName,
+  WorkflowJob,
+  WorkflowResult,
+} from '../types/index.js';
 
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
@@ -77,7 +81,7 @@ function getCanonicalCarrierSlug(slug: string): CarrierName {
  */
 export async function executeWorkflow(
   carrierName: CarrierName,
-  job: WorkflowJob
+  job: WorkflowJob,
 ): Promise<WorkflowResult> {
   if (carrierName === 'unknown') {
     return {
@@ -93,7 +97,9 @@ export async function executeWorkflow(
     client = await createStagehandClient();
 
     // Import and execute workflow script
-    let workflowModule: { runWorkflow: typeof import('../workflows/net_abacus.js').runWorkflow };
+    let workflowModule: {
+      runWorkflow: typeof import('../workflows/net_abacus.js').runWorkflow;
+    };
 
     switch (carrierName) {
       case 'net_abacus':
@@ -119,7 +125,6 @@ export async function executeWorkflow(
     // Execute workflow
     const result = await workflowModule.runWorkflow(client.stagehand, job);
     return result;
-
   } catch (error: any) {
     return {
       success: false,
@@ -143,9 +148,7 @@ export async function executeWorkflow(
  * @param job - Workflow job with credentials and metadata
  * @returns Promise with workflow result
  */
-export async function runWorkflow(
-  job: WorkflowJob
-): Promise<WorkflowResult> {
+export async function runWorkflow(job: WorkflowJob): Promise<WorkflowResult> {
   const carrierName = identifyCarrier(job.credential.login_url);
   return executeWorkflow(carrierName, job);
 }

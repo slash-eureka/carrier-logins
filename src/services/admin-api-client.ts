@@ -15,7 +15,7 @@ import type {
  */
 export async function createInboxStatements(
   jobId: string,
-  attachments: CloudinaryAttachment[]
+  attachments: CloudinaryAttachment[],
 ): Promise<CreateInboxStatementsResponse> {
   const url = `${config.adminApi.baseUrl}/internal/supplier_statement_fetching_jobs_admin/${jobId}/create_inbox_statements`;
 
@@ -24,19 +24,23 @@ export async function createInboxStatements(
   };
 
   try {
-    const response = await axios.post<CreateInboxStatementsResponse>(url, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.adminApi.apiKey}`,
+    const response = await axios.post<CreateInboxStatementsResponse>(
+      url,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${config.adminApi.apiKey}`,
+        },
+        timeout: 30000,
       },
-      timeout: 30000,
-    });
+    );
 
     return response.data;
   } catch (error: any) {
     if (error.response) {
       throw new Error(
-        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
+        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`,
       );
     }
     if (error.code === 'ECONNABORTED') {
@@ -54,7 +58,7 @@ export async function createInboxStatements(
  */
 export async function updateJobStatus(
   jobId: string,
-  statusUpdate: UpdateJobStatusRequest
+  statusUpdate: UpdateJobStatusRequest,
 ): Promise<void> {
   const url = `${config.adminApi.baseUrl}/internal/supplier_statement_fetching_jobs_admin/${jobId}`;
 
@@ -62,14 +66,14 @@ export async function updateJobStatus(
     await axios.patch(url, statusUpdate, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.adminApi.apiKey}`,
+        Authorization: `Bearer ${config.adminApi.apiKey}`,
       },
       timeout: 30000,
     });
   } catch (error: any) {
     if (error.response) {
       throw new Error(
-        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`
+        `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`,
       );
     }
     if (error.code === 'ECONNABORTED') {
@@ -85,23 +89,36 @@ export async function updateJobStatus(
  * @returns Failure reason for Admin API
  */
 export function mapErrorToFailureReason(
-  errorMessage: string
+  errorMessage: string,
 ): UpdateJobStatusRequest['failure_reason'] {
   const lowerError = errorMessage.toLowerCase();
 
-  if (lowerError.includes('invalid credentials') || lowerError.includes('login failed')) {
+  if (
+    lowerError.includes('invalid credentials') ||
+    lowerError.includes('login failed')
+  ) {
     return 'invalid_credentials';
   }
   if (lowerError.includes('mfa') || lowerError.includes('two-factor')) {
     return 'requires_mfa';
   }
-  if (lowerError.includes('unavailable') || lowerError.includes('timeout') || lowerError.includes('network')) {
+  if (
+    lowerError.includes('unavailable') ||
+    lowerError.includes('timeout') ||
+    lowerError.includes('network')
+  ) {
     return 'carrier_unavailable';
   }
-  if (lowerError.includes('unknown carrier') || lowerError.includes('script not found')) {
+  if (
+    lowerError.includes('unknown carrier') ||
+    lowerError.includes('script not found')
+  ) {
     return 'missing_instruction';
   }
-  if (lowerError.includes('password expired') || lowerError.includes('must change password')) {
+  if (
+    lowerError.includes('password expired') ||
+    lowerError.includes('must change password')
+  ) {
     return 'password_change';
   }
 

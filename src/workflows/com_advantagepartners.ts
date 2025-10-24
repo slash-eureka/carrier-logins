@@ -14,7 +14,7 @@ import type { WorkflowJob, WorkflowResult } from '../types/index.js';
  */
 export async function runWorkflow(
   stagehand: Stagehand,
-  job: WorkflowJob
+  job: WorkflowJob,
 ): Promise<WorkflowResult> {
   const { username, password, login_url: loginUrl } = job.credential;
   const page = stagehand.page;

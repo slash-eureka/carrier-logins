@@ -5,7 +5,11 @@ import { config } from '../config/index.js';
  * API Key authentication middleware
  * Validates X-API-Key header against configured API key
  */
-export function authenticateApiKey(req: Request, res: Response, next: NextFunction): void {
+export function authenticateApiKey(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const apiKey = req.headers['x-api-key'];
 
   if (!apiKey) {

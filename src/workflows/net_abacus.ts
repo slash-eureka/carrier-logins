@@ -14,7 +14,7 @@ import type { WorkflowJob, WorkflowResult } from '../types/index.js';
  */
 export async function runWorkflow(
   stagehand: Stagehand,
-  job: WorkflowJob
+  job: WorkflowJob,
 ): Promise<WorkflowResult> {
   const { username, password, login_url: loginUrl } = job.credential;
   const page = stagehand.page;
@@ -29,13 +29,22 @@ export async function runWorkflow(
         // Wait for the new page to start loading
         await newPage.waitForLoadState('domcontentloaded', { timeout: 5000 });
         const url = newPage.url();
-        if (url.includes('.pdf') || url.includes('documents.abacus.net') || url.includes('/account/statements/')) {
+        if (
+          url.includes('.pdf') ||
+          url.includes('documents.abacus.net') ||
+          url.includes('/account/statements/')
+        ) {
           pdfUrl = url;
         }
       } catch (err) {
         // Try to get URL even if page didn't fully load
         const url = newPage.url();
-        if (url && (url.includes('.pdf') || url.includes('documents.abacus.net') || url.includes('/account/statements/'))) {
+        if (
+          url &&
+          (url.includes('.pdf') ||
+            url.includes('documents.abacus.net') ||
+            url.includes('/account/statements/'))
+        ) {
           pdfUrl = url;
         }
       }
@@ -79,12 +88,16 @@ export async function runWorkflow(
       if (!link) {
         // Find link with "Download" text
         const links = Array.from(document.querySelectorAll('a'));
-        link = links.find(l => l.textContent!.toLowerCase().includes('download'));
+        link = links.find((l) =>
+          l.textContent!.toLowerCase().includes('download'),
+        );
       }
 
       if (!link) {
         // Try first link in table rows
-        link = document.querySelector('tr:first-child a, .statement-row:first-child a, table a');
+        link = document.querySelector(
+          'tr:first-child a, .statement-row:first-child a, table a',
+        );
       }
 
       return link;
@@ -99,7 +112,10 @@ export async function runWorkflow(
     // Navigate to statement page to intercept the S3 PDF URL
     // Note: This may throw ERR_ABORTED because PDF download aborts navigation
     try {
-      await page.goto(pdfLinkUrl, { waitUntil: 'domcontentloaded', timeout: 5000 });
+      await page.goto(pdfLinkUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 5000,
+      });
     } catch (err) {
       // Ignore navigation errors - PDF URL should be intercepted by now
     }

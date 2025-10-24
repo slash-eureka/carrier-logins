@@ -44,6 +44,27 @@ npm run test:watch
 npm run test:coverage
 ```
 
+### Linting & Formatting
+
+Check and fix code quality:
+
+```bash
+# Run linter
+npm run lint
+
+# Fix auto-fixable lint issues
+npm run lint:fix
+
+# Format code with Prettier
+npm run format
+
+# Check formatting without making changes
+npm run format:check
+
+# Type check without building
+npm run typecheck
+```
+
 ### Production
 
 Build and run the production server:
@@ -64,12 +85,10 @@ You can test individual carrier workflows using the workflow command. The carrie
 npm run workflow <loginUrl> <username> <password>
 ```
 
-**Examples:**
+**Example:**
 
 ```bash
 npm run workflow https://abacus.net/login myuser mypass
-npm run workflow https://advantagepartners.com/login myuser mypass
-npm run workflow https://amerisafe.com/login myuser mypass
 ```
 
 The script will output JSON with the workflow results.
