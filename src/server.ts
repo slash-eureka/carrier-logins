@@ -21,8 +21,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Fetch statements endpoint
-app.post('/api/v1/fetch-statements', authenticateApiKey, async (req, res) => {
+// Create job endpoint
+app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
   const {
     job_id,
     credential,

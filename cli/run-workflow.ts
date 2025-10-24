@@ -3,12 +3,12 @@
  * CLI tool for testing carrier workflow scripts
  *
  * Usage:
- *   npm run workflow <username> <password> <loginUrl>
+ *   npm run workflow <loginUrl> <username> <password>
  *
  * Example:
- *   npm run workflow myuser mypass https://abacus.net/login
- *   npm run workflow user pass https://advantagepartners.com/login
- *   npm run workflow user pass https://amerisafe.com/login
+ *   npm run workflow https://abacus.net/login myuser mypass
+ *   npm run workflow https://advantagepartners.com/login user pass
+ *   npm run workflow https://amerisafe.com/login user pass
  */
 
 import 'dotenv/config';
@@ -17,17 +17,17 @@ import { identifyCarrier } from '../src/services/workflow-manager.js';
 import type { WorkflowJob } from '../src/types/index.js';
 
 async function main() {
-  const [username, password, loginUrl] = process.argv.slice(2);
+  const [loginUrl, username, password] = process.argv.slice(2);
 
   // Validate arguments
-  if (!username || !password || !loginUrl) {
+  if (!loginUrl || !username || !password) {
     console.error(JSON.stringify({
       success: false,
       error: 'Missing required arguments',
-      usage: 'npm run workflow <username> <password> <loginUrl>',
+      usage: 'npm run workflow <loginUrl> <username> <password>',
       examples: [
-        'npm run workflow myuser mypass https://abacus.net/login',
-        'npm run workflow user pass https://advantagepartners.com/login',
+        'npm run workflow https://abacus.net/login myuser mypass',
+        'npm run workflow https://advantagepartners.com/login user pass',
       ],
     }));
     process.exit(1);

@@ -61,22 +61,22 @@ npm start
 You can test individual carrier workflows using the workflow command. The carrier is automatically identified from the login URL:
 
 ```bash
-npm run workflow <username> <password> <loginUrl>
+npm run workflow <loginUrl> <username> <password>
 ```
 
 **Examples:**
 
 ```bash
-npm run workflow myuser mypass https://abacus.net/login
-npm run workflow myuser mypass https://advantagepartners.com/login
-npm run workflow myuser mypass https://amerisafe.com/login
+npm run workflow https://abacus.net/login myuser mypass
+npm run workflow https://advantagepartners.com/login myuser mypass
+npm run workflow https://amerisafe.com/login myuser mypass
 ```
 
 The script will output JSON with the workflow results.
 
 ### API Endpoints
 
-**POST /api/v1/fetch-statements** - Submit a job to fetch carrier statements
+**POST /api/v1/jobs** - Create a job to fetch carrier statements
 - Headers: `X-API-Key: your-api-key`
 - Body:
   ```json
@@ -99,4 +99,4 @@ The script will output JSON with the workflow results.
 ### TODO
 - Capture cloudinary etags to avoid duplicate statements
 - Include last retrieved statement identifier in the fetch-statements request to avoid fetching duplicate statements
-
+- Set up github tests to run
