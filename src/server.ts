@@ -7,7 +7,6 @@ import { processStatements } from './services/statement-processor.js';
 import {
   createInboxStatements,
   updateJobStatus,
-  mapErrorToFailureReason,
 } from './services/admin-api-client.js';
 import type {
   FetchStatementsRequest,
@@ -15,7 +14,6 @@ import type {
   ErrorResponse,
 } from './types/index.js';
 
-// Validate configuration on startup
 validateConfig();
 
 const app = express();
@@ -24,12 +22,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Create job endpoint
+// Start job workflow
 app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
   const { job_id, credential, accounting_period_start_date } =
     req.body as FetchStatementsRequest;
@@ -73,9 +71,6 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
   processJobAsync(req.body as FetchStatementsRequest);
 });
 
-/**
- * Process job asynchronously
- */
 async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
   const {
     job_id: jobId,
@@ -87,8 +82,8 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     console.log(`[Job ${jobId}] Starting processing...`);
 
     // Identify carrier
-    const carrierName = identifyCarrier(credential.login_url);
-    console.log(`[Job ${jobId}] Identified carrier: ${carrierName}`);
+    const carrierSlug = identifyCarrier(credential.login_url);
+    console.log(`[Job ${jobId}] Identified carrier: ${carrierSlug}`);
 
     // Run workflow
     const result = await runWorkflow(job);
@@ -99,9 +94,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
       // Update job status to failed
       await updateJobStatus(jobId, {
         status: 'failed',
-        failure_reason: mapErrorToFailureReason(
-          result.error || 'Unknown error',
-        ),
+        failure_reason: 'carrier_unavailable',
         notes: result.error,
       });
 
@@ -115,7 +108,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     // Process statements (filter by date, download PDFs, upload to Cloudinary)
     const attachments = await processStatements(
       result.statements,
-      carrierName,
+      carrierSlug,
       accountingPeriodStartDate,
     );
 
@@ -151,7 +144,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
       // Try to update Admin API with failure status
       await updateJobStatus(jobId, {
         status: 'failed',
-        failure_reason: mapErrorToFailureReason(error.message),
+        failure_reason: 'carrier_unavailable',
         notes: error.message,
       });
     } catch (adminApiError: any) {
@@ -178,10 +171,9 @@ app.use(
   },
 );
 
-// Start server
 const PORT = config.port;
 app.listen(PORT, () => {
-  console.log(`Carrier workflow service running on port ${PORT}`);
+  console.log(`Browser workflow service running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

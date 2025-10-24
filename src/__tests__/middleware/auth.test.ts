@@ -1,7 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { authenticateApiKey } from '../../middleware/auth.js';
 
-// Mock config
 jest.mock('../../config/index.js', () => ({
   config: {
     apiKey: 'test-api-key-123',
