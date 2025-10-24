@@ -10,7 +10,7 @@ import type {
  * @param loginUrl - The carrier's login URL
  * @returns Carrier name in reverse domain notation (e.g., "net_abacus")
  */
-export function identifyCarrier(loginUrl: string): CarrierName {
+export function identify(loginUrl: string): CarrierName {
   try {
     const url = new URL(loginUrl);
     const hostname = url.hostname.toLowerCase();
@@ -148,7 +148,7 @@ export async function executeWorkflow(
  * @param job - Workflow job with credentials and metadata
  * @returns Promise with workflow result
  */
-export async function runWorkflow(job: WorkflowJob): Promise<WorkflowResult> {
-  const carrierName = identifyCarrier(job.credential.login_url);
+export async function run(job: WorkflowJob): Promise<WorkflowResult> {
+  const carrierName = identify(job.credential.login_url);
   return executeWorkflow(carrierName, job);
 }

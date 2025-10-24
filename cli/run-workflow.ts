@@ -11,7 +11,7 @@
 
 import 'dotenv/config';
 import { createStagehandClient } from '../src/lib/stagehand-client.js';
-import { identifyCarrier } from '../src/services/workflow-manager.js';
+import * as workflow from '../src/services/workflow-manager.js';
 import type { WorkflowJob } from '../src/types/index.js';
 
 async function main() {
@@ -34,7 +34,7 @@ async function main() {
   }
 
   // Identify carrier from login URL
-  const carrierSlug = identifyCarrier(loginUrl);
+  const carrierSlug = workflow.identify(loginUrl);
 
   if (carrierSlug === 'unknown') {
     console.error(

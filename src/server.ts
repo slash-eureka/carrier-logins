@@ -2,12 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { config, validateConfig } from './config/index.js';
 import { authenticateApiKey } from './middleware/auth.js';
-import { runWorkflow, identifyCarrier } from './services/workflow-manager.js';
 import { processStatements } from './services/statement-processor.js';
-import {
-  createInboxStatements,
-  updateJobStatus,
-} from './services/admin-api-client.js';
+import * as adminApi from './services/admin-api-client.js';
+import * as workflow from './services/workflow-manager.js';
 import type {
   FetchStatementsRequest,
   FetchStatementsResponse,
@@ -32,7 +29,6 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
   const { job_id, credential, accounting_period_start_date } =
     req.body as FetchStatementsRequest;
 
-  // Validate required fields
   if (!job_id) {
     res.status(400).json({
       error: 'Missing required field: job_id',
@@ -60,14 +56,12 @@ app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
     return;
   }
 
-  // Respond immediately with 202 Accepted
   const response: FetchStatementsResponse = {
     message: 'Job accepted for processing',
     job_id,
   };
   res.status(202).json(response);
 
-  // Process job asynchronously in background
   processJobAsync(req.body as FetchStatementsRequest);
 });
 
@@ -81,18 +75,15 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
   try {
     console.log(`[Job ${jobId}] Starting processing...`);
 
-    // Identify carrier
-    const carrierSlug = identifyCarrier(credential.login_url);
+    const carrierSlug = workflow.identify(credential.login_url);
     console.log(`[Job ${jobId}] Identified carrier: ${carrierSlug}`);
 
-    // Run workflow
-    const result = await runWorkflow(job);
+    const result = await workflow.run(job);
 
     if (!result.success) {
       console.error(`[Job ${jobId}] Workflow failed:`, result.error);
 
-      // Update job status to failed
-      await updateJobStatus(jobId, {
+      await adminApi.updateJobStatus(jobId, {
         status: 'failed',
         failure_reason: 'carrier_unavailable',
         notes: result.error,
@@ -105,7 +96,6 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
       `[Job ${jobId}] Workflow succeeded. Found ${result.statements.length} statements.`,
     );
 
-    // Process statements (filter by date, download PDFs, upload to Cloudinary)
     const attachments = await processStatements(
       result.statements,
       carrierSlug,
@@ -117,20 +107,20 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     );
 
     if (attachments.length > 0) {
-      // Create inbox statements via Admin API
-      const adminApiResponse = await createInboxStatements(jobId, attachments);
+      const adminApiResponse = await adminApi.createInboxStatements(
+        jobId,
+        attachments,
+      );
       console.log(
         `[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`,
       );
 
-      // Update job status to success
-      await updateJobStatus(jobId, {
+      await adminApi.updateJobStatus(jobId, {
         status: 'success',
       });
     } else {
-      // No new statements - still mark as success
       console.log(`[Job ${jobId}] No new statements found after filtering.`);
-      await updateJobStatus(jobId, {
+      await adminApi.updateJobStatus(jobId, {
         status: 'success',
         notes: 'No new statements found after date filtering',
       });
@@ -141,8 +131,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     console.error(`[Job ${jobId}] Error during processing:`, error);
 
     try {
-      // Try to update Admin API with failure status
-      await updateJobStatus(jobId, {
+      await adminApi.updateJobStatus(jobId, {
         status: 'failed',
         failure_reason: 'carrier_unavailable',
         notes: error.message,
@@ -156,7 +145,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
   }
 }
 
-// Error handling middleware
+// Error middleware
 app.use(
   (
     err: Error,

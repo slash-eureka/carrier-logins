@@ -1,42 +1,42 @@
-import { identifyCarrier } from '../../services/workflow-manager.js';
+import * as workflow from '../../services/workflow-manager.js';
 
 describe('workflow-manager', () => {
-  describe('identifyCarrier', () => {
+  describe('identify', () => {
     it('should identify net_abacus carrier', () => {
-      expect(identifyCarrier('https://portal.abacus.net/login')).toBe(
+      expect(workflow.identify('https://portal.abacus.net/login')).toBe(
         'net_abacus',
       );
-      expect(identifyCarrier('https://abacus.com/login')).toBe('net_abacus');
+      expect(workflow.identify('https://abacus.com/login')).toBe('net_abacus');
     });
 
     it('should identify com_advantagepartners carrier', () => {
-      expect(identifyCarrier('https://advantage.com/login')).toBe(
+      expect(workflow.identify('https://advantage.com/login')).toBe(
         'com_advantagepartners',
       );
-      expect(identifyCarrier('https://advantagepartners.com/login')).toBe(
+      expect(workflow.identify('https://advantagepartners.com/login')).toBe(
         'com_advantagepartners',
       );
     });
 
     it('should identify com_amerisafe carrier', () => {
-      expect(identifyCarrier('https://amerisafe.com/login')).toBe(
+      expect(workflow.identify('https://amerisafe.com/login')).toBe(
         'com_amerisafe',
       );
-      expect(identifyCarrier('https://portal.amerisafe.com/login')).toBe(
+      expect(workflow.identify('https://portal.amerisafe.com/login')).toBe(
         'com_amerisafe',
       );
     });
 
     it('should return unknown for unrecognized carrier', () => {
-      expect(identifyCarrier('https://unknown-carrier.com/login')).toBe(
+      expect(workflow.identify('https://unknown-carrier.com/login')).toBe(
         'unknown',
       );
-      expect(identifyCarrier('https://example.com/login')).toBe('unknown');
+      expect(workflow.identify('https://example.com/login')).toBe('unknown');
     });
 
     it('should handle invalid URLs', () => {
-      expect(identifyCarrier('not-a-url')).toBe('unknown');
-      expect(identifyCarrier('')).toBe('unknown');
+      expect(workflow.identify('not-a-url')).toBe('unknown');
+      expect(workflow.identify('')).toBe('unknown');
     });
   });
 });

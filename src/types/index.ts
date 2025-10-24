@@ -1,29 +1,26 @@
-// Statement types
 export interface Statement {
   pdfUrl: string;
-  statementDate: string; // ISO date string (YYYY-MM-DD)
+  statementDate: string;
   filename?: string;
 }
 
-// Carrier authentication types
+// TODO: this will likely require polymorphism for different carriers
 export interface CarrierCredentials {
   username: string;
   password: string;
   login_url: string;
 }
 
-// Workflow types
 export interface WorkflowResult {
   success: boolean;
   statements: Statement[];
   error?: string;
 }
 
-// API request/response types
 export interface FetchStatementsRequest {
   job_id: string;
   credential: CarrierCredentials;
-  accounting_period_start_date: string; // ISO date (YYYY-MM-DD)
+  accounting_period_start_date: string;
 }
 
 export interface FetchStatementsResponse {
@@ -31,19 +28,17 @@ export interface FetchStatementsResponse {
   job_id: string;
 }
 
-// Workflow job types
 export interface SupplierStatementFetchingJob extends FetchStatementsRequest {
-  // Represents a workflow job for fetching supplier (carrier) statements
+  // Represents a workflow job for fetching supplier statements
 }
 
-export type WorkflowJob = SupplierStatementFetchingJob;
 // Type alias for workflow jobs - can become union type when adding more workflow types
+export type WorkflowJob = SupplierStatementFetchingJob;
 
 export interface ErrorResponse {
   error: string;
 }
 
-// Admin API types
 export interface CloudinaryAttachment {
   public_id: string;
   format: string;
@@ -78,7 +73,6 @@ export interface UpdateJobStatusRequest {
   notes?: string;
 }
 
-// Configuration types
 export interface AppConfig {
   port: number;
   apiKey: string;
@@ -100,7 +94,6 @@ export interface AppConfig {
   };
 }
 
-// Carrier identification (using reverse domain notation)
 export type CarrierName =
   | 'net_abacus'
   | 'com_advantagepartners'
