@@ -26,7 +26,7 @@ app.get('/health', (req, res) => {
 });
 
 // Start job workflow
-app.post('/api/v1/jobs', authenticateApiKey, async (req, res) => {
+app.post('/api/v1/jobs', authenticateApiKey, (req, res) => {
   const { job_id, credential, accounting_period_start_date } =
     req.body as FetchStatementsRequest;
 

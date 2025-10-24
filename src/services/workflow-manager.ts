@@ -89,7 +89,7 @@ export async function executeWorkflow(
         return {
           success: false,
           statements: [],
-          error: `No workflow script implemented for carrier: ${carrierSlug}`,
+          error: `No workflow script implemented for carrier: ${String(carrierSlug)}`,
         };
     }
 

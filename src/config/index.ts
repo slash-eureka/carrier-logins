@@ -45,9 +45,12 @@ export function validateConfig(): void {
 
   for (const field of requiredFields) {
     const parts = field.split('.');
-    let value: any = config;
+    let value: unknown = config;
     for (const part of parts) {
-      value = value[part];
+      if (typeof value !== 'object' || value === null) {
+        throw new Error(`Invalid configuration: ${field} is missing or empty`);
+      }
+      value = (value as Record<string, unknown>)[part];
     }
     if (!value) {
       throw new Error(`Invalid configuration: ${field} is missing or empty`);

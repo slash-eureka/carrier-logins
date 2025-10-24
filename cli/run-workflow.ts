@@ -10,10 +10,11 @@
  */
 
 import 'dotenv/config';
+import type { Stagehand } from '@browserbasehq/stagehand';
 import { createStagehandClient } from '../src/lib/stagehand-client.js';
 import * as workflow from '../src/services/workflow-manager.js';
 import { getErrorMessage } from '../src/lib/error-utils.js';
-import type { WorkflowJob } from '../src/types/index.js';
+import type { WorkflowJob, WorkflowResult } from '../src/types/index.js';
 
 async function main() {
   const [loginUrl, username, password] = process.argv.slice(2);
@@ -51,7 +52,14 @@ async function main() {
   let client;
   try {
     // Import the workflow script dynamically
-    const workflowModule = await import(`../src/workflows/${carrierSlug}.js`);
+    const workflowModule = (await import(
+      `../src/workflows/${carrierSlug}.js`
+    )) as {
+      runWorkflow: (
+        stagehand: Stagehand,
+        job: WorkflowJob,
+      ) => Promise<WorkflowResult>;
+    };
 
     if (typeof workflowModule.runWorkflow !== 'function') {
       throw new Error(
@@ -107,4 +115,4 @@ async function main() {
   }
 }
 
-main();
+void main();

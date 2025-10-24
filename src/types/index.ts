@@ -28,12 +28,8 @@ export interface FetchStatementsResponse {
   job_id: string;
 }
 
-export interface SupplierStatementFetchingJob extends FetchStatementsRequest {
-  // Represents a workflow job for fetching supplier statements
-}
-
 // Type alias for workflow jobs - can become union type when adding more workflow types
-export type WorkflowJob = SupplierStatementFetchingJob;
+export type WorkflowJob = FetchStatementsRequest;
 
 export interface ErrorResponse {
   error: string;

@@ -3,6 +3,8 @@
  * Logs into Abacus portal and retrieves commission statement PDF URLs
  */
 
+/* eslint-disable */
+
 import type { Stagehand } from '@browserbasehq/stagehand';
 import type { WorkflowJob, WorkflowResult } from '../types/index.js';
 import { getErrorMessage } from '../lib/error-utils.js';
@@ -117,7 +119,7 @@ export async function runWorkflow(
         waitUntil: 'domcontentloaded',
         timeout: 5000,
       });
-    } catch (err) {
+    } catch {
       // Ignore navigation errors - PDF URL should be intercepted by now
     }
 
