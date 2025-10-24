@@ -95,7 +95,7 @@ The script will output JSON with the workflow results.
 
 ### API Endpoints
 
-**POST /api/v1/jobs** - Create a job to fetch carrier statements
+**POST /api/v1/jobs** - Start a job to fetch carrier statements
 - Headers: `X-API-Key: your-api-key`
 - Body:
   ```json

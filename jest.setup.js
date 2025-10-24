@@ -1,4 +1,3 @@
-// Set up test environment variables
 process.env.PORT = '3003';
 process.env.API_KEY = 'test-api-key';
 process.env.ADMIN_API_KEY = 'test-admin-api-key';
