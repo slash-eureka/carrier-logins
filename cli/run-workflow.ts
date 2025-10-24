@@ -3,41 +3,44 @@
  * CLI tool for testing carrier workflow scripts
  *
  * Usage:
- *   npm run test-workflow <carrier-name> <username> <password> <loginUrl>
+ *   npm run workflow <username> <password> <loginUrl>
  *
  * Example:
- *   npm run test-workflow abacus myuser mypass https://abacus.com/login
- *   npm run test-workflow advantage-partners user pass https://advantage.com/login
- *   npm run test-workflow amerisafe user pass https://amerisafe.com/login
+ *   npm run workflow myuser mypass https://abacus.net/login
+ *   npm run workflow user pass https://advantagepartners.com/login
+ *   npm run workflow user pass https://amerisafe.com/login
  */
 
 import 'dotenv/config';
 import { createStagehandClient } from '../src/lib/stagehand-client.js';
+import { identifyCarrier } from '../src/services/workflow-manager.js';
 import type { WorkflowJob } from '../src/types/index.js';
 
-const VALID_CARRIERS = ['net_abacus', 'com_advantagepartners', 'com_amerisafe'] as const;
-type CarrierName = typeof VALID_CARRIERS[number];
-
 async function main() {
-  const [carrierName, username, password, loginUrl] = process.argv.slice(2);
+  const [username, password, loginUrl] = process.argv.slice(2);
 
   // Validate arguments
-  if (!carrierName || !username || !password || !loginUrl) {
+  if (!username || !password || !loginUrl) {
     console.error(JSON.stringify({
       success: false,
       error: 'Missing required arguments',
-      usage: 'npm run test-workflow <carrier-name> <username> <password> <loginUrl>',
-      validCarriers: VALID_CARRIERS,
+      usage: 'npm run workflow <username> <password> <loginUrl>',
+      examples: [
+        'npm run workflow myuser mypass https://abacus.net/login',
+        'npm run workflow user pass https://advantagepartners.com/login',
+      ],
     }));
     process.exit(1);
   }
 
-  // Validate carrier name
-  if (!VALID_CARRIERS.includes(carrierName as CarrierName)) {
+  // Identify carrier from login URL
+  const carrierName = identifyCarrier(loginUrl);
+
+  if (carrierName === 'unknown') {
     console.error(JSON.stringify({
       success: false,
-      error: `Invalid carrier name: ${carrierName}`,
-      validCarriers: VALID_CARRIERS,
+      error: `Could not identify carrier from URL: ${loginUrl}`,
+      hint: 'Make sure the URL contains a supported carrier domain',
     }));
     process.exit(1);
   }
@@ -57,10 +60,11 @@ async function main() {
     // Create workflow job object
     const job: WorkflowJob = {
       job_id: 'cli-test-' + Date.now(),
-      organization_id: 'cli-test-org',
-      username,
-      password,
-      login_url: loginUrl,
+      credential: {
+        username,
+        password,
+        login_url: loginUrl,
+      },
       accounting_period_start_date: '1970-01-01', // Get all statements for CLI testing
     };
 

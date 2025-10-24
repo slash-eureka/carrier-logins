@@ -15,10 +15,7 @@ npm install
    cp .env.example .env
    ```
 
-2. Edit `.env` and add your credentials:
-   - `BROWSERBASE_API_KEY` - Your Browserbase API key
-   - `BROWSERBASE_PROJECT_ID` - Your Browserbase project ID
-   - `GEMINI_API_KEY` - Your Google Gemini API key
+2. Edit `.env` and add your credentials
 
 ## Usage
 
@@ -61,18 +58,18 @@ npm start
 
 ### Manual Workflow Testing
 
-You can test individual carrier workflows using the test-workflow command:
+You can test individual carrier workflows using the workflow command. The carrier is automatically identified from the login URL:
 
 ```bash
-npm run test-workflow <carrier-name> <username> <password> <loginUrl>
+npm run workflow <username> <password> <loginUrl>
 ```
 
 **Examples:**
 
 ```bash
-npm run test-workflow net_abacus myuser mypass https://abacus.net/login
-npm run test-workflow com_advantagepartners myuser mypass https://advantagepartners.com/login
-npm run test-workflow com_amerisafe myuser mypass https://amerisafe.com/login
+npm run workflow myuser mypass https://abacus.net/login
+npm run workflow myuser mypass https://advantagepartners.com/login
+npm run workflow myuser mypass https://amerisafe.com/login
 ```
 
 The script will output JSON with the workflow results.
@@ -81,7 +78,18 @@ The script will output JSON with the workflow results.
 
 **POST /api/v1/fetch-statements** - Submit a job to fetch carrier statements
 - Headers: `X-API-Key: your-api-key`
-- Body: `{ job_id, organization_id, username, password, login_url, accounting_period_start_date }`
+- Body:
+  ```json
+  {
+    "job_id": "uuid",
+    "credential": {
+      "username": "carrier-username",
+      "password": "carrier-password",
+      "login_url": "https://carrier-portal.com/login"
+    },
+    "accounting_period_start_date": "2024-01-01"
+  }
+  ```
 - Returns: `202 Accepted` (job processes asynchronously)
 
 **GET /health** - Health check endpoint
@@ -90,5 +98,5 @@ The script will output JSON with the workflow results.
 
 ### TODO
 - Capture cloudinary etags to avoid duplicate statements
-- Include last retrieved statement identifier in the fetch-statements request
+- Include last retrieved statement identifier in the fetch-statements request to avoid fetching duplicate statements
 
