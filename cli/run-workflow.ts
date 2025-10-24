@@ -12,6 +12,7 @@
 import 'dotenv/config';
 import { createStagehandClient } from '../src/lib/stagehand-client.js';
 import * as workflow from '../src/services/workflow-manager.js';
+import { getErrorMessage } from '../src/lib/error-utils.js';
 import type { WorkflowJob } from '../src/types/index.js';
 
 async function main() {
@@ -86,13 +87,13 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
 
     process.exit(result.success ? 0 : 1);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(
       JSON.stringify(
         {
           success: false,
-          error: error.message,
-          stack: error.stack,
+          error: getErrorMessage(error),
+          stack: error instanceof Error ? error.stack : undefined,
         },
         null,
         2,

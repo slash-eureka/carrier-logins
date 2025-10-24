@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { config } from '../config/index.js';
+import { getErrorMessage } from '../lib/error-utils.js';
 import type {
   CloudinaryAttachment,
   CreateInboxStatementsRequest,
@@ -37,16 +38,15 @@ export async function createInboxStatements(
     );
 
     return response.data;
-  } catch (error: any) {
-    if (error.response) {
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
       throw new Error(
         `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`,
       );
     }
-    if (error.code === 'ECONNABORTED') {
-      throw new Error('Admin API request timeout');
-    }
-    throw new Error(`Failed to create inbox statements: ${error.message}`);
+    throw new Error(
+      `Failed to create inbox statements: ${getErrorMessage(error)}`,
+    );
   }
 }
 
@@ -70,15 +70,12 @@ export async function updateJobStatus(
       },
       timeout: 30000,
     });
-  } catch (error: any) {
-    if (error.response) {
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
       throw new Error(
         `Admin API error: ${error.response.status} ${error.response.statusText} - ${JSON.stringify(error.response.data)}`,
       );
     }
-    if (error.code === 'ECONNABORTED') {
-      throw new Error('Admin API request timeout');
-    }
-    throw new Error(`Failed to update job status: ${error.message}`);
+    throw new Error(`Failed to update job status: ${getErrorMessage(error)}`);
   }
 }

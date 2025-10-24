@@ -1,4 +1,5 @@
 import { createStagehandClient } from '../lib/stagehand-client.js';
+import { getErrorMessage } from '../lib/error-utils.js';
 import type {
   CarrierName,
   WorkflowJob,
@@ -125,11 +126,11 @@ export async function executeWorkflow(
     // Execute workflow
     const result = await workflowModule.runWorkflow(client.stagehand, job);
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       statements: [],
-      error: `Failed to execute workflow: ${error.message}`,
+      error: `Failed to execute workflow: ${getErrorMessage(error)}`,
     };
   } finally {
     // Always close the Stagehand client

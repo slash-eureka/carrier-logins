@@ -5,6 +5,7 @@
 
 import type { Stagehand } from '@browserbasehq/stagehand';
 import type { WorkflowJob, WorkflowResult } from '../types/index.js';
+import { getErrorMessage } from '../lib/error-utils.js';
 
 /**
  * Run workflow for Amerisafe supplier statement fetching
@@ -52,11 +53,11 @@ export async function runWorkflow(
         },
       ],
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
       statements: [],
-      error: error.message,
+      error: getErrorMessage(error),
     };
   }
 }

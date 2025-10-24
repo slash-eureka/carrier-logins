@@ -1,5 +1,6 @@
 import { downloadPdf, extractFilename } from '../lib/pdf-downloader.js';
 import { uploadPdf } from '../lib/cloudinary-service.js';
+import { getErrorMessage } from '../lib/error-utils.js';
 import type {
   Statement,
   CloudinaryAttachment,
@@ -82,10 +83,10 @@ export async function processStatements(
     try {
       const attachment = await processStatement(statement, carrierName);
       attachments.push(attachment);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         `Failed to process statement ${statement.filename}:`,
-        error.message,
+        getErrorMessage(error),
       );
       // Continue processing other statements
     }

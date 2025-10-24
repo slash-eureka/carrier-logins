@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getErrorMessage } from './error-utils.js';
 
 /**
  * Download a PDF from a URL and return as Buffer
@@ -18,18 +19,13 @@ export async function downloadPdf(url: string): Promise<Buffer> {
     }
 
     return Buffer.from(response.data);
-  } catch (error: any) {
-    if (error.code === 'ECONNABORTED') {
-      throw new Error(
-        'PDF download timeout - file may be too large or server is slow',
-      );
-    }
-    if (error.response) {
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response) {
       throw new Error(
         `Failed to download PDF: HTTP ${error.response.status} ${error.response.statusText}`,
       );
     }
-    throw new Error(`Failed to download PDF: ${error.message}`);
+    throw new Error(`Failed to download PDF: ${getErrorMessage(error)}`);
   }
 }
 

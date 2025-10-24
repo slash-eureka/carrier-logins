@@ -5,6 +5,7 @@ import { authenticateApiKey } from './middleware/auth.js';
 import { processStatements } from './services/statement-processor.js';
 import * as adminApi from './services/admin-api-client.js';
 import * as workflow from './services/workflow-manager.js';
+import { getErrorMessage } from './lib/error-utils.js';
 import type {
   FetchStatementsRequest,
   FetchStatementsResponse,
@@ -127,19 +128,19 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     }
 
     console.log(`[Job ${jobId}] Processing completed successfully.`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Job ${jobId}] Error during processing:`, error);
 
     try {
       await adminApi.updateJobStatus(jobId, {
         status: 'failed',
         failure_reason: 'carrier_unavailable',
-        notes: error.message,
+        notes: getErrorMessage(error),
       });
-    } catch (adminApiError: any) {
+    } catch (adminApiError: unknown) {
       console.error(
         `[Job ${jobId}] Failed to update Admin API job status:`,
-        adminApiError.message,
+        getErrorMessage(adminApiError),
       );
     }
   }
