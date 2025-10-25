@@ -29,31 +29,3 @@ export const config: AppConfig = {
     apiSecret: getEnvVar('CLOUDINARY_API_SECRET'),
   },
 };
-
-export function validateConfig(): void {
-  const requiredFields = [
-    'apiKey',
-    'adminApi.apiKey',
-    'adminApi.baseUrl',
-    'browserbase.apiKey',
-    'browserbase.projectId',
-    'gemini.apiKey',
-    'cloudinary.cloudName',
-    'cloudinary.apiKey',
-    'cloudinary.apiSecret',
-  ];
-
-  for (const field of requiredFields) {
-    const parts = field.split('.');
-    let value: unknown = config;
-    for (const part of parts) {
-      if (typeof value !== 'object' || value === null) {
-        throw new Error(`Invalid configuration: ${field} is missing or empty`);
-      }
-      value = (value as Record<string, unknown>)[part];
-    }
-    if (!value) {
-      throw new Error(`Invalid configuration: ${field} is missing or empty`);
-    }
-  }
-}

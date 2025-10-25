@@ -90,8 +90,4 @@ export interface AppConfig {
   };
 }
 
-export type CarrierSlug =
-  | 'net_abacus'
-  | 'com_advantagepartners'
-  | 'com_amerisafe'
-  | 'unknown';
+export type CarrierSlug = 'net_abacus' | 'unknown';

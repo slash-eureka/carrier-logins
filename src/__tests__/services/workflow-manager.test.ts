@@ -9,24 +9,6 @@ describe('workflow-manager', () => {
       expect(workflow.identify('https://abacus.net/login')).toBe('net_abacus');
     });
 
-    it('should identify com_advantagepartners carrier', () => {
-      expect(workflow.identify('https://advantagepartners.com/login')).toBe(
-        'com_advantagepartners',
-      );
-      expect(
-        workflow.identify('https://portal.advantagepartners.com/login'),
-      ).toBe('com_advantagepartners');
-    });
-
-    it('should identify com_amerisafe carrier', () => {
-      expect(workflow.identify('https://amerisafe.com/login')).toBe(
-        'com_amerisafe',
-      );
-      expect(workflow.identify('https://portal.amerisafe.com/login')).toBe(
-        'com_amerisafe',
-      );
-    });
-
     it('should return unknown for unrecognized carrier', () => {
       expect(workflow.identify('https://unknown-carrier.com/login')).toBe(
         'unknown',

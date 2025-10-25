@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { config, validateConfig } from './config/index.js';
+import { config } from './config/index.js';
 import { authenticateApiKey } from './middleware/auth.js';
 import { processStatements } from './services/statement-processor.js';
 import * as adminApi from './services/admin-api-client.js';
@@ -11,8 +11,6 @@ import type {
   FetchStatementsResponse,
   ErrorResponse,
 } from './types/index.js';
-
-validateConfig();
 
 const app = express();
 
