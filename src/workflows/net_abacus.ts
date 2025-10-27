@@ -84,16 +84,16 @@ export async function runWorkflow(
     await page.waitForTimeout(3000);
 
     // Step 7: Use proven Playwright selectors to find download link
-    const pdfLinkHandle = await page.evaluateHandle(() => {
+    const pdfLinkHandle = await page.evaluateHandle((): Element | null => {
       // Try multiple selectors in order
-      let link = document.querySelector('[href*=".pdf"]');
+      let link: Element | null = document.querySelector('[href*=".pdf"]');
 
       if (!link) {
         // Find link with "Download" text
-        const links = Array.from(document.querySelectorAll('a'));
+        const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a'));
         link = links.find((l) =>
           l.textContent!.toLowerCase().includes('download'),
-        );
+        ) || null;
       }
 
       if (!link) {
