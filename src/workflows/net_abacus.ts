@@ -83,34 +83,14 @@ export async function runWorkflow(
 
     await page.waitForTimeout(3000);
 
-    // Step 7: Use proven Playwright selectors to find download link
-    const pdfLinkHandle = await page.evaluateHandle((): Element | null => {
-      // Try multiple selectors in order
-      let link: Element | null = document.querySelector('[href*=".pdf"]');
+    // Step 7: Retrieve the statement button for specified accounting period
+    const buttons = await page.observe(`Find the Download button for the Statement with billing period of ${job.accounting_period_start_date}`)
+    const buttonLocator = page.locator(buttons[0].selector);
+    const pdfLinkUrl = await buttonLocator.evaluate((el: any) => el.href);
 
-      if (!link) {
-        // Find link with "Download" text
-        const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a'));
-        link = links.find((l) =>
-          l.textContent!.toLowerCase().includes('download'),
-        ) || null;
-      }
-
-      if (!link) {
-        // Try first link in table rows
-        link = document.querySelector(
-          'tr:first-child a, .statement-row:first-child a, table a',
-        );
-      }
-
-      return link;
-    });
-
-    if (!pdfLinkHandle || !(await pdfLinkHandle.asElement())) {
-      throw new Error('Could not find PDF link on statements page');
+    if (!pdfLinkUrl) {
+      throw new Error('Could not find PDF download link');
     }
-
-    const pdfLinkUrl = await page.evaluate((el: any) => el.href, pdfLinkHandle);
 
     // Navigate to statement page to intercept the S3 PDF URL
     // Note: This may throw ERR_ABORTED because PDF download aborts navigation

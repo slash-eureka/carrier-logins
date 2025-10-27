@@ -84,8 +84,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
 
       await adminApi.updateJobStatus(jobId, {
         status: 'failed',
-        failure_reason: 'carrier_unavailable',
-        notes: result.error,
+        failure_reason: 'carrier_unavailable'
       });
 
       return;
@@ -113,17 +112,11 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
       console.log(
         `[Job ${jobId}] Created ${adminApiResponse.inbox_item_ids.length} inbox items via Admin API.`,
       );
-
-      await adminApi.updateJobStatus(jobId, {
-        status: 'success',
-      });
     } else {
       console.log(`[Job ${jobId}] No new statements found after filtering.`);
-      await adminApi.updateJobStatus(jobId, {
-        status: 'success',
-        notes: 'No new statements found after date filtering',
-      });
     }
+
+    await adminApi.updateJobStatus(jobId, {status: 'success'});
 
     console.log(`[Job ${jobId}] Processing completed successfully.`);
   } catch (error: unknown) {
@@ -132,8 +125,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     try {
       await adminApi.updateJobStatus(jobId, {
         status: 'failed',
-        failure_reason: 'carrier_unavailable',
-        notes: getErrorMessage(error),
+        failure_reason: 'carrier_unavailable'
       });
     } catch (adminApiError: unknown) {
       console.error(

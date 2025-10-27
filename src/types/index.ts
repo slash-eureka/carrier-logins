@@ -66,7 +66,6 @@ export interface UpdateJobStatusRequest {
     | 'carrier_unavailable'
     | 'missing_instruction'
     | 'password_change';
-  notes?: string;
 }
 
 export interface AppConfig {
