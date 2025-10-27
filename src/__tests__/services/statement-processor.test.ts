@@ -4,10 +4,10 @@ import type { Statement } from '../../types/index.js';
 describe('statement-processor', () => {
   describe('filterStatementsByDate', () => {
     const statements: Statement[] = [
-      { pdfUrl: 'url1', statementDate: '2024-01-15', filename: 'stmt1.pdf' },
-      { pdfUrl: 'url2', statementDate: '2024-02-15', filename: 'stmt2.pdf' },
-      { pdfUrl: 'url3', statementDate: '2024-03-15', filename: 'stmt3.pdf' },
-      { pdfUrl: 'url4', statementDate: '2023-12-15', filename: 'stmt4.pdf' },
+      { pdfUrl: 'url1', statementDate: '2024-01-15' },
+      { pdfUrl: 'url2', statementDate: '2024-02-15' },
+      { pdfUrl: 'url3', statementDate: '2024-03-15' },
+      { pdfUrl: 'url4', statementDate: '2023-12-15' },
     ];
 
     it('should filter statements after the cutoff date', () => {

@@ -1,7 +1,6 @@
 export interface Statement {
   pdfUrl: string;
   statementDate: string;
-  filename?: string;
 }
 
 // TODO: this will likely require polymorphism for different carriers

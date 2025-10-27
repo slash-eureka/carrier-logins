@@ -109,17 +109,12 @@ export async function runWorkflow(
       throw new Error('Could not intercept PDF URL');
     }
 
-    // Extract statement date from URL or filename if possible
-    // For now, we'll use current date as fallback
-    const statementDate = new Date().toISOString().split('T')[0];
-
     return {
       success: true,
       statements: [
         {
           pdfUrl,
-          statementDate,
-          filename: 'abacus_statement.pdf',
+          statementDate: job.accounting_period_start_date,
         },
       ],
     };

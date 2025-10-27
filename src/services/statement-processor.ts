@@ -40,7 +40,7 @@ export async function processStatement(
   }
 
   const pdfBuffer = await downloadPdf(statement.pdfUrl);
-  const filename = statement.filename || extractFilename(statement.pdfUrl);
+  const filename = extractFilename(statement.pdfUrl);
 
   const attachment = await uploadPdf(pdfBuffer, {
     carrierName: carrierSlug,
@@ -85,7 +85,7 @@ export async function processStatements(
       attachments.push(attachment);
     } catch (error: unknown) {
       console.error(
-        `Failed to process statement ${statement.filename}:`,
+        `Failed to process statement for ${statement.statementDate}:`,
         getErrorMessage(error),
       );
       // Continue processing other statements
