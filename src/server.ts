@@ -1,3 +1,5 @@
+import './instrument.ts';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
@@ -5,7 +7,6 @@ import { authenticateApiKey } from './middleware/auth.js';
 import { processStatements } from './services/statement-processor.js';
 import * as adminApi from './services/admin-api-client.js';
 import * as workflow from './services/workflow-manager.js';
-import { getErrorMessage } from './lib/error-utils.js';
 import type {
   FetchStatementsRequest,
   FetchStatementsResponse,
@@ -121,22 +122,17 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     console.log(`[Job ${jobId}] Processing completed successfully.`);
   } catch (error: unknown) {
     console.error(`[Job ${jobId}] Error during processing:`, error);
+    Sentry.captureException(error);
 
-    try {
-      await adminApi.updateJobStatus(jobId, {
-        status: 'failed',
-        failure_reason: 'carrier_unavailable',
-      });
-    } catch (adminApiError: unknown) {
-      console.error(
-        `[Job ${jobId}] Failed to update Admin API job status:`,
-        getErrorMessage(adminApiError),
-      );
-    }
+    await adminApi.updateJobStatus(jobId, {
+      status: 'failed',
+      failure_reason: 'carrier_unavailable',
+    });
   }
 }
 
 // Error middleware
+Sentry.setupExpressErrorHandler(app);
 app.use(
   (
     err: Error,
