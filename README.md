@@ -113,3 +113,7 @@ The script will output JSON with the workflow results.
 
 **GET /health** - Health check endpoint
 - Returns: `200 OK` with timestamp
+
+### TODO
+- should I generate new org token?
+- figure out how I should ensure that workflows don't fail silently?

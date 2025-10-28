@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { createStagehandClient } from '../lib/stagehand-client.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 import type {
@@ -84,6 +85,7 @@ export async function executeWorkflow(
     const result = await workflowModule.runWorkflow(client.stagehand, job);
     return result;
   } catch (error: unknown) {
+    Sentry.captureException(error);
     return {
       success: false,
       statements: [],

@@ -81,14 +81,7 @@ async function processJobAsync(job: FetchStatementsRequest): Promise<void> {
     const result = await workflow.run(job);
 
     if (!result.success) {
-      console.error(`[Job ${jobId}] Workflow failed:`, result.error);
-
-      await adminApi.updateJobStatus(jobId, {
-        status: 'failed',
-        failure_reason: 'carrier_unavailable',
-      });
-
-      return;
+      throw new Error(`Workflow failed: ${result.error}`);
     }
 
     console.log(
