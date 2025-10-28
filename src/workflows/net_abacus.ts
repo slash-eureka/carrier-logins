@@ -84,7 +84,9 @@ export async function runWorkflow(
     await page.waitForTimeout(3000);
 
     // Step 7: Retrieve the statement button for specified accounting period
-    const buttons = await page.observe(`Find the Download button for the Statement with billing period of ${job.accounting_period_start_date}`)
+    const buttons = await page.observe(
+      `Find the Download button for the Statement with billing period of ${job.accounting_period_start_date}`,
+    );
     const buttonLocator = page.locator(buttons[0].selector);
     const pdfLinkUrl = await buttonLocator.evaluate((el: any) => el.href);
 
