@@ -6,7 +6,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node --import=./dist/instrument.js dist/server.js",
     "dev": "tsx watch src/server.ts",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "@browserbasehq/stagehand": "^2.5.2",
+    "@sentry/node": "^8.47.0",
+    "@sentry/profiling-node": "^8.47.0",
     "axios": "^1.7.2",
     "cloudinary": "^2.0.0",
     "cors": "^2.8.5",
