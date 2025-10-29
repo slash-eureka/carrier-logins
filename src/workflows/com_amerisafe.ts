@@ -25,13 +25,13 @@ function formatDateForAmerisafe(dateString: string): string {
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
     return dateString;
   }
-  
+
   // Convert from YYYY-MM-DD to MM/DD/YYYY
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     const [year, month, day] = dateString.split('-');
     return `${month}/${day}/${year}`;
   }
-  
+
   // Return as-is if format is unrecognized
   return dateString;
 }
@@ -45,8 +45,10 @@ export async function runWorkflow(
 
   try {
     // Convert date to Amerisafe's format (MM/DD/YYYY)
-    const formattedDate = formatDateForAmerisafe(job.accounting_period_start_date);
-    
+    const formattedDate = formatDateForAmerisafe(
+      job.accounting_period_start_date,
+    );
+
     // Step 1: Navigate to login page
     await page.goto(loginUrl);
 
@@ -69,7 +71,7 @@ export async function runWorkflow(
     const statementLinks = await page.observe(
       `Find the link for the ${formattedDate} statement`,
     );
-    
+
     if (!statementLinks || statementLinks.length === 0) {
       throw new Error(`Could not find statement link for ${formattedDate}`);
     }
@@ -81,10 +83,10 @@ export async function runWorkflow(
     let pdfUrl: string | null = null;
     let pdfBytes: Buffer | null = null as Buffer | null;
     let resolvePdfUrl: ((url: string) => void) | null = null;
-    
+
     const pdfUrlPromise = new Promise<string>((resolve, reject) => {
       resolvePdfUrl = resolve;
-      
+
       // Set a timeout in case the PDF never loads
       setTimeout(() => {
         if (!pdfUrl) {
@@ -97,7 +99,7 @@ export async function runWorkflow(
     page.on('response', async (response: any) => {
       const url = response.url();
       const contentType = response.headers()['content-type'] || '';
-      
+
       if (contentType.includes('pdf') || url.includes('.pdf')) {
         pdfUrl = url;
         resolvePdfUrl?.(url);
@@ -105,18 +107,22 @@ export async function runWorkflow(
     });
 
     await linkLocator.click();
-    
+
     try {
       pdfUrl = await pdfUrlPromise;
     } catch (error) {
-      throw new Error('Failed to detect PDF response after clicking statement link');
+      throw new Error(
+        'Failed to detect PDF response after clicking statement link',
+      );
     }
 
     if (pdfUrl) {
       const response = await page.request.get(pdfUrl);
-      
+
       if (!response.ok()) {
-        throw new Error(`Failed to fetch PDF: ${response.status()} ${response.statusText()}`);
+        throw new Error(
+          `Failed to fetch PDF: ${response.status()} ${response.statusText()}`,
+        );
       }
 
       pdfBytes = await response.body();
@@ -126,7 +132,9 @@ export async function runWorkflow(
       throw new Error('Failed to capture PDF content');
     }
 
-    console.log(`Successfully captured PDF: ${pdfBytes.length} bytes for statement date ${formattedDate}`);
+    console.log(
+      `Successfully captured PDF: ${pdfBytes.length} bytes for statement date ${formattedDate}`,
+    );
 
     return {
       success: true,
@@ -145,4 +153,3 @@ export async function runWorkflow(
     };
   }
 }
-
