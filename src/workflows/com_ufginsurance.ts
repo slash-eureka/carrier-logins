@@ -82,7 +82,7 @@ export async function runWorkflow(
     await page.route('**/*agency-statement*', async (route: any) => {
       try {
         const response = await route.fetch();
-        const buffer = await response.body();
+        const buffer = await response.body() as Buffer;
 
         if (buffer && buffer.length > 0) {
           pdfBuffer = buffer;
@@ -153,7 +153,7 @@ export async function runWorkflow(
       success: true,
       statements: [
         {
-          pdfBuffer: pdfBuffer as Buffer,
+          pdfBuffer,
           pdfFilename: filename,
           statementDate: job.accounting_period_start_date,
         },

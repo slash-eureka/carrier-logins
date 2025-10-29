@@ -34,16 +34,12 @@ function validatePdfBuffer(buffer: Buffer): void {
   if (!buffer || buffer.length === 0) {
     throw new Error('PDF buffer is empty or null');
   }
-
-  // Check PDF header: should start with "%PDF" (bytes: 0x25 0x50 0x44 0x46)
   const header = buffer.slice(0, 4).toString('ascii');
   if (header !== '%PDF') {
     throw new Error(
       `Invalid PDF: expected header "%PDF" but got "${header}" (bytes: ${buffer.slice(0, 4).join(' ')})`,
     );
   }
-
-  console.log(`PDF validation passed: ${buffer.length} bytes, header: ${header}`);
 }
 
 /**
@@ -56,26 +52,18 @@ export async function processStatement(
   statement: Statement,
   carrierSlug: CarrierSlug,
 ): Promise<CloudinaryAttachment> {
-  let pdfBuffer: Buffer;
-  let filename: string;
+  const { pdfBuffer: buffer, pdfUrl, pdfFilename } = statement;
 
-  // Handle both URL-based and Buffer-based statements
-  if (statement.pdfBuffer) {
-    // Statement already has PDF data as Buffer
-    pdfBuffer = statement.pdfBuffer;
-    filename = statement.pdfFilename || 'statement.pdf';
-  } else if (statement.pdfUrl) {
-    // Statement has URL - download PDF
-    pdfBuffer = await downloadPdf(statement.pdfUrl);
-    filename = extractFilename(statement.pdfUrl);
-  } else {
+  if (!buffer && !pdfUrl) {
     throw new Error('Statement has neither pdfUrl nor pdfBuffer');
   }
 
-  // Validate PDF before uploading
+  const pdfBuffer = buffer || await downloadPdf(pdfUrl!);
+  const filename = buffer ? (pdfFilename || 'statement.pdf') : extractFilename(pdfUrl!);
+
   validatePdfBuffer(pdfBuffer);
 
-  const attachment = await uploadPdf(pdfBuffer, {
+  return uploadPdf(pdfBuffer, {
     carrierName: carrierSlug,
     filename,
     metadata: {
@@ -83,8 +71,6 @@ export async function processStatement(
       carrier: carrierSlug,
     },
   });
-
-  return attachment;
 }
 
 /**
