@@ -492,10 +492,8 @@ try {
 3. **Check Browser Console:** Look for JavaScript errors in carrier portal
 4. **Inspect Network Tab:** Identify PDF request patterns
 5. **Test with Real Credentials:** Some portals behave differently with test accounts
-
-```
-npx tsx --inspect-brk cli/run-workflow.ts LOGIN_URL USERNAME PASSWORD
-```
+6. **Tail Heroku Logs:** `heroku logs --tail --app carrier-logins`
+7. **Use Chrome Debugger:** `npx tsx --inspect-brk cli/run-workflow.ts LOGIN_URL USERNAME PASSWORD` and then navigate to `chrome://inspect` in your browser
 
 ### Examples
 
