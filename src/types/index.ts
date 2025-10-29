@@ -1,6 +1,8 @@
 export interface Statement {
-  pdfUrl: string;
-  statementDate: string;
+  pdfUrl?: string; // Optional: URL to PDF (for direct download)
+  pdfBuffer?: Buffer; // Optional: PDF data as Buffer (for blob URLs)
+  pdfFilename?: string; // Required when using pdfBuffer
+  statementDate: string; // Required: Date string
 }
 
 // TODO: this will likely require polymorphism for different carriers
@@ -88,4 +90,4 @@ export interface AppConfig {
   };
 }
 
-export type CarrierSlug = 'net_abacus' | 'unknown';
+export type CarrierSlug = 'net_abacus' | 'com_ufginsurance' | 'unknown';

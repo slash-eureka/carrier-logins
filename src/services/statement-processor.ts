@@ -35,12 +35,21 @@ export async function processStatement(
   statement: Statement,
   carrierSlug: CarrierSlug,
 ): Promise<CloudinaryAttachment> {
-  if (!statement.pdfUrl) {
-    throw new Error('Statement has no PDF URL');
-  }
+  let pdfBuffer: Buffer;
+  let filename: string;
 
-  const pdfBuffer = await downloadPdf(statement.pdfUrl);
-  const filename = extractFilename(statement.pdfUrl);
+  // Handle both URL-based and Buffer-based statements
+  if (statement.pdfBuffer) {
+    // Statement already has PDF data as Buffer
+    pdfBuffer = statement.pdfBuffer;
+    filename = statement.pdfFilename || 'statement.pdf';
+  } else if (statement.pdfUrl) {
+    // Statement has URL - download PDF
+    pdfBuffer = await downloadPdf(statement.pdfUrl);
+    filename = extractFilename(statement.pdfUrl);
+  } else {
+    throw new Error('Statement has neither pdfUrl nor pdfBuffer');
+  }
 
   const attachment = await uploadPdf(pdfBuffer, {
     carrierName: carrierSlug,
