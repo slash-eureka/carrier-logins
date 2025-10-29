@@ -90,4 +90,4 @@ export interface AppConfig {
   };
 }
 
-export type CarrierSlug = 'net_abacus' | 'com_ufginsurance' | 'unknown';
+export type CarrierSlug = string;

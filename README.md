@@ -120,7 +120,9 @@ This section provides step-by-step instructions for adding a new carrier workflo
 
 ### Overview
 
-Workflows are modular, pure functions that handle carrier-specific navigation logic. They follow a consistent pattern and integrate with the existing infrastructure for PDF processing, Cloudinary uploads, and Admin API callbacks.
+Workflows are modular, pure functions that handle carrier-specific navigation logic. They are **automatically discovered at runtime** - just create a workflow file with the correct naming convention and it works! No manual registration or type updates needed.
+
+The system integrates automatically with existing infrastructure for PDF processing, Cloudinary uploads, and Admin API callbacks.
 
 ### Prerequisites
 
@@ -140,17 +142,7 @@ The carrier slug uses **reverse domain notation** with underscores:
 
 **Formula:** `{TLD}_{DOMAIN}` (using the last 2 parts of the hostname)
 
-#### 2. Update Type Definitions
-
-**File:** `src/types/index.ts`
-
-Add your carrier slug to the `CarrierSlug` type union:
-
-```typescript
-export type CarrierSlug = 'net_abacus' | 'com_ufginsurance' | 'com_yournewcarrier' | 'unknown';
-```
-
-#### 3. Create the Workflow Script
+#### 2. Create the Workflow Script
 
 **File:** `src/workflows/{carrier_slug}.ts`
 
@@ -205,7 +197,7 @@ export async function runWorkflow(
 - Use try-catch with `getErrorMessage()` for error handling
 - Return `WorkflowResult` with success status and statements array
 
-#### 4. Choose PDF Capture Method
+#### 3. Choose PDF Capture Method
 
 Depending on how the carrier serves PDFs, use one of these approaches:
 
@@ -282,44 +274,9 @@ return {
 };
 ```
 
-#### 5. Register the Workflow
+**Note:** Workflows are dynamically loaded at runtime - no registration needed! Just create the file with the correct naming convention and it will be automatically discovered.
 
-**File:** `src/services/workflow-manager.ts`
-
-Make two changes:
-
-**a) Add to KNOWN_CARRIERS set:**
-
-```typescript
-const KNOWN_CARRIERS = new Set(['net_abacus', 'com_ufginsurance', 'com_yournewcarrier']);
-```
-
-**b) Add import case in executeWorkflow():**
-
-```typescript
-switch (carrierSlug) {
-  case 'net_abacus':
-    workflowModule = await import('../workflows/net_abacus.js');
-    break;
-
-  case 'com_ufginsurance':
-    workflowModule = await import('../workflows/com_ufginsurance.js');
-    break;
-
-  case 'com_yournewcarrier':
-    workflowModule = await import('../workflows/com_yournewcarrier.js');
-    break;
-
-  default:
-    return {
-      success: false,
-      statements: [],
-      error: `No workflow script implemented for carrier: ${String(carrierSlug)}`,
-    };
-}
-```
-
-#### 6. Test the Workflow
+#### 4. Test the Workflow
 
 ##### Via CLI (Recommended for initial testing)
 
@@ -356,7 +313,7 @@ curl -X POST http://localhost:3003/api/v1/jobs \
   }'
 ```
 
-#### 7. Verify TypeScript Compilation
+#### 5. Verify TypeScript Compilation
 
 ```bash
 npm run build
@@ -364,7 +321,7 @@ npm run build
 
 Ensure there are no TypeScript errors.
 
-#### 8. Run Existing Tests
+#### 6. Run Existing Tests
 
 ```bash
 npm test
@@ -500,7 +457,6 @@ try {
 See existing workflow implementations:
 - **`src/workflows/net_abacus.ts`** - Direct PDF URL interception
 - **`src/workflows/com_ufginsurance.ts`** - Blob URL with PDF buffer capture
-- **`src/workflows/com_advantagepartners.ts`** - Another example (if available)
 
 ### TODO
 - should I generate new org token?

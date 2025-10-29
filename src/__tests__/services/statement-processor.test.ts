@@ -6,7 +6,6 @@ import type { Statement } from '../../types/index.js';
 import { downloadPdf, extractFilename } from '../../lib/pdf-downloader.js';
 import { uploadPdf } from '../../lib/cloudinary-service.js';
 
-// Mock dependencies
 jest.mock('../../lib/pdf-downloader.js');
 jest.mock('../../lib/cloudinary-service.js');
 

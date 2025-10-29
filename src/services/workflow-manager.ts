@@ -7,8 +7,6 @@ import type {
   WorkflowResult,
 } from '../types/index.js';
 
-const KNOWN_CARRIERS = new Set(['net_abacus', 'com_ufginsurance']);
-
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
  * @param loginUrl - The carrier's login URL
@@ -18,8 +16,7 @@ export function identify(loginUrl: string): CarrierSlug {
   try {
     const url = new URL(loginUrl);
     const hostname = url.hostname.toLowerCase();
-    const slug = extractReverseDomainSlug(hostname);
-    return KNOWN_CARRIERS.has(slug) ? (slug as CarrierSlug) : 'unknown';
+    return extractReverseDomainSlug(hostname);
   } catch {
     return 'unknown';
   }
@@ -68,27 +65,21 @@ export async function executeWorkflow(
   try {
     client = await createStagehandClient();
 
-    let workflowModule;
-    switch (carrierSlug) {
-      case 'net_abacus':
-        workflowModule = await import('../workflows/net_abacus.js');
-        break;
-
-      case 'com_ufginsurance':
-        workflowModule = await import('../workflows/com_ufginsurance.js');
-        break;
-
-      default:
-        return {
-          success: false,
-          statements: [],
-          error: `No workflow script implemented for carrier: ${String(carrierSlug)}`,
-        };
-    }
+    // Dynamically import workflow module based on carrier slug
+    const workflowModule = await import(`../workflows/${carrierSlug}.js`);
 
     const result = await workflowModule.runWorkflow(client.stagehand, job);
     return result;
   } catch (error: unknown) {
+    // Check if it's a module not found error
+    if (error instanceof Error && error.message.includes('Cannot find module')) {
+      return {
+        success: false,
+        statements: [],
+        error: `No workflow implemented for carrier: ${carrierSlug}`,
+      };
+    }
+
     Sentry.captureException(error);
     return {
       success: false,

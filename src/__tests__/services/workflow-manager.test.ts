@@ -9,14 +9,20 @@ describe('workflow-manager', () => {
       expect(workflow.identify('https://abacus.net/login')).toBe('net_abacus');
     });
 
-    it('should return unknown for unrecognized carrier', () => {
-      expect(workflow.identify('https://unknown-carrier.com/login')).toBe(
-        'unknown',
+    it('should identify com_ufginsurance carrier', () => {
+      expect(workflow.identify('https://agents.ufginsurance.com/login')).toBe(
+        'com_ufginsurance',
       );
-      expect(workflow.identify('https://example.com/login')).toBe('unknown');
     });
 
-    it('should handle invalid URLs', () => {
+    it('should return carrier slug for any valid URL', () => {
+      expect(workflow.identify('https://unknown-carrier.com/login')).toBe(
+        'com_unknown-carrier',
+      );
+      expect(workflow.identify('https://example.com/login')).toBe('com_example');
+    });
+
+    it('should return unknown for invalid URLs', () => {
       expect(workflow.identify('not-a-url')).toBe('unknown');
       expect(workflow.identify('')).toBe('unknown');
     });
