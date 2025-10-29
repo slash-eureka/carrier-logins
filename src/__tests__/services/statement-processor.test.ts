@@ -113,7 +113,6 @@ describe('statement-processor', () => {
 
     describe('with pdfBuffer (pre-captured PDF)', () => {
       it('should use buffer directly and upload to Cloudinary', async () => {
-        // Create a buffer with valid PDF header
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
           pdfBuffer: mockBuffer,
@@ -133,11 +132,9 @@ describe('statement-processor', () => {
 
         const result = await processStatement(statement, 'com_ufginsurance');
 
-        // Should NOT call download functions
         expect(mockDownloadPdf).not.toHaveBeenCalled();
         expect(mockExtractFilename).not.toHaveBeenCalled();
 
-        // Should call upload with the buffer directly
         expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
           carrierName: 'com_ufginsurance',
           filename: 'UFG_Statement_2024-01-15.pdf',
@@ -170,7 +167,7 @@ describe('statement-processor', () => {
 
         expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
           carrierName: 'com_ufginsurance',
-          filename: 'statement.pdf', // Default filename
+          filename: 'statement.pdf',
           metadata: {
             statement_date: '2024-01-15',
             carrier: 'com_ufginsurance',
@@ -241,8 +238,8 @@ describe('statement-processor', () => {
       it('should prefer pdfBuffer over pdfUrl when both are present', async () => {
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
-          pdfUrl: 'https://example.com/statement.pdf', // This should be ignored
-          pdfBuffer: mockBuffer, // This should be used
+          pdfUrl: 'https://example.com/statement.pdf',
+          pdfBuffer: mockBuffer,
           pdfFilename: 'buffer_statement.pdf',
           statementDate: '2024-01-15',
         };
@@ -259,11 +256,9 @@ describe('statement-processor', () => {
 
         const result = await processStatement(statement, 'net_abacus');
 
-        // Should NOT call download functions (pdfBuffer takes priority)
         expect(mockDownloadPdf).not.toHaveBeenCalled();
         expect(mockExtractFilename).not.toHaveBeenCalled();
 
-        // Should use the buffer
         expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
           carrierName: 'net_abacus',
           filename: 'buffer_statement.pdf',

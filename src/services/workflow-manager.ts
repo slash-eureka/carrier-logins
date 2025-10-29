@@ -73,14 +73,13 @@ export async function executeWorkflow(
   try {
     client = await createStagehandClient();
 
-    // Dynamically import workflow module based on carrier slug
+    // Dynamically import workflow module using carrier slug
     const workflowModule = (await import(
       `../workflows/${carrierSlug}.js`
     )) as WorkflowModule;
 
     return workflowModule.runWorkflow(client.stagehand, job);
   } catch (error: unknown) {
-    // Check if it's a module not found error
     if (
       error instanceof Error &&
       error.message.includes('Cannot find module')

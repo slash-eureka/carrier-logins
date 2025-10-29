@@ -1,8 +1,8 @@
 export interface Statement {
-  pdfUrl?: string; // Optional: URL to PDF (for direct download)
-  pdfBuffer?: Buffer; // Optional: PDF data as Buffer (for blob URLs)
-  pdfFilename?: string; // Required when using pdfBuffer
-  statementDate: string; // Required: Date string
+  pdfUrl?: string;
+  pdfBuffer?: Buffer;
+  pdfFilename?: string;
+  statementDate: string;
 }
 
 // TODO: this will likely require polymorphism for different carriers
