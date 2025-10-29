@@ -66,8 +66,8 @@ export async function runWorkflow(
       job.accounting_period_start_date,
     );
 
-    const matchingDate = extractedStatements.dates?.find((dateStr: string) =>
-      normalizeDate(dateStr) === targetDateNormalized
+    const matchingDate = extractedStatements.dates?.find(
+      (dateStr: string) => normalizeDate(dateStr) === targetDateNormalized,
     );
 
     if (!matchingDate) {
@@ -82,7 +82,7 @@ export async function runWorkflow(
     await page.route('**/*agency-statement*', async (route: any) => {
       try {
         const response = await route.fetch();
-        const buffer = await response.body() as Buffer;
+        const buffer = (await response.body()) as Buffer;
 
         if (buffer && buffer.length > 0) {
           pdfBuffer = buffer;
@@ -106,7 +106,9 @@ export async function runWorkflow(
     });
 
     if (!buttonAction || buttonAction.length === 0) {
-      throw new Error(`Could not find Monthly Statement button for ${matchingDate}`);
+      throw new Error(
+        `Could not find Monthly Statement button for ${matchingDate}`,
+      );
     }
 
     // Click button and wait for PDF capture (CDP errors may occur but are caught)
@@ -134,8 +136,11 @@ export async function runWorkflow(
     try {
       await clickAndWait();
     } catch (err: any) {
-      console.log('Error during click/wait, checking if PDF was captured:', err.message);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(
+        'Error during click/wait, checking if PDF was captured:',
+        err.message,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (!pdfBuffer) {
         throw err;

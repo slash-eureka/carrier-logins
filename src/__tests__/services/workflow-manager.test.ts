@@ -19,7 +19,9 @@ describe('workflow-manager', () => {
       expect(workflow.identify('https://unknown-carrier.com/login')).toBe(
         'com_unknown-carrier',
       );
-      expect(workflow.identify('https://example.com/login')).toBe('com_example');
+      expect(workflow.identify('https://example.com/login')).toBe(
+        'com_example',
+      );
     });
 
     it('should return unknown for invalid URLs', () => {

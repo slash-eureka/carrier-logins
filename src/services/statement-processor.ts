@@ -58,8 +58,10 @@ export async function processStatement(
     throw new Error('Statement has neither pdfUrl nor pdfBuffer');
   }
 
-  const pdfBuffer = buffer || await downloadPdf(pdfUrl!);
-  const filename = buffer ? (pdfFilename || 'statement.pdf') : extractFilename(pdfUrl!);
+  const pdfBuffer = buffer || (await downloadPdf(pdfUrl!));
+  const filename = buffer
+    ? pdfFilename || 'statement.pdf'
+    : extractFilename(pdfUrl!);
 
   validatePdfBuffer(pdfBuffer);
 

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import type { Stagehand } from '@browserbasehq/stagehand';
 import { createStagehandClient } from '../lib/stagehand-client.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 import type {
@@ -6,6 +7,13 @@ import type {
   WorkflowJob,
   WorkflowResult,
 } from '../types/index.js';
+
+interface WorkflowModule {
+  runWorkflow: (
+    stagehand: Stagehand,
+    job: WorkflowJob,
+  ) => Promise<WorkflowResult>;
+}
 
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
@@ -66,13 +74,17 @@ export async function executeWorkflow(
     client = await createStagehandClient();
 
     // Dynamically import workflow module based on carrier slug
-    const workflowModule = await import(`../workflows/${carrierSlug}.js`);
+    const workflowModule = (await import(
+      `../workflows/${carrierSlug}.js`
+    )) as WorkflowModule;
 
-    const result = await workflowModule.runWorkflow(client.stagehand, job);
-    return result;
+    return workflowModule.runWorkflow(client.stagehand, job);
   } catch (error: unknown) {
     // Check if it's a module not found error
-    if (error instanceof Error && error.message.includes('Cannot find module')) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Cannot find module')
+    ) {
       return {
         success: false,
         statements: [],

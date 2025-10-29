@@ -105,9 +105,9 @@ describe('statement-processor', () => {
 
         mockDownloadPdf.mockRejectedValue(new Error('Download failed'));
 
-        await expect(
-          processStatement(statement, 'net_abacus'),
-        ).rejects.toThrow('Download failed');
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Download failed',
+        );
       });
     });
 
@@ -201,9 +201,9 @@ describe('statement-processor', () => {
           statementDate: '2024-01-15',
         };
 
-        await expect(
-          processStatement(statement, 'net_abacus'),
-        ).rejects.toThrow('Statement has neither pdfUrl nor pdfBuffer');
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Statement has neither pdfUrl nor pdfBuffer',
+        );
 
         expect(mockDownloadPdf).not.toHaveBeenCalled();
         expect(mockUploadPdf).not.toHaveBeenCalled();
@@ -215,9 +215,9 @@ describe('statement-processor', () => {
           statementDate: '2024-01-15',
         };
 
-        await expect(
-          processStatement(statement, 'net_abacus'),
-        ).rejects.toThrow('PDF buffer is empty or null');
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'PDF buffer is empty or null',
+        );
 
         expect(mockUploadPdf).not.toHaveBeenCalled();
       });
@@ -229,9 +229,9 @@ describe('statement-processor', () => {
           statementDate: '2024-01-15',
         };
 
-        await expect(
-          processStatement(statement, 'net_abacus'),
-        ).rejects.toThrow('Invalid PDF: expected header "%PDF" but got "<!DO"');
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Invalid PDF: expected header "%PDF" but got "<!DO"',
+        );
 
         expect(mockUploadPdf).not.toHaveBeenCalled();
       });
