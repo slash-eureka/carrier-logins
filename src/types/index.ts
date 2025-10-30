@@ -1,5 +1,7 @@
 export interface Statement {
-  pdfUrl: string;
+  pdfUrl?: string;
+  pdfBuffer?: Buffer;
+  pdfFilename?: string;
   statementDate: string;
 }
 
@@ -88,4 +90,4 @@ export interface AppConfig {
   };
 }
 
-export type CarrierSlug = 'net_abacus' | 'unknown';
+export type CarrierSlug = string;
