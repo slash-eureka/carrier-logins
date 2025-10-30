@@ -73,7 +73,10 @@ export async function runWorkflow(
     );
 
     if (!statementLinks || statementLinks.length === 0) {
-      throw new Error(`Could not find statement link for ${formattedDate}`);
+      return {
+        success: true,
+        statements: [],
+      };
     }
 
     // Get the statement link
