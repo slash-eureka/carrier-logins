@@ -81,7 +81,7 @@ export async function runWorkflow(
 
     // Set up promise to wait for the PDF response
     let pdfUrl: string | null = null;
-    let pdfBytes: Buffer | null = null as Buffer | null;
+    let pdfBuffer: Buffer | null = null;
     let resolvePdfUrl: ((url: string) => void) | null = null;
 
     const pdfUrlPromise = new Promise<string>((resolve, reject) => {
@@ -125,22 +125,23 @@ export async function runWorkflow(
         );
       }
 
-      pdfBytes = await response.body();
+      pdfBuffer = await response.body();
     }
 
-    if (!pdfBytes || pdfBytes.length === 0) {
+    if (!pdfBuffer || pdfBuffer.length === 0) {
       throw new Error('Failed to capture PDF content');
     }
 
     console.log(
-      `Successfully captured PDF: ${pdfBytes.length} bytes for statement date ${formattedDate}`,
+      `Successfully captured PDF: ${pdfBuffer.length} bytes for statement date ${formattedDate}`,
     );
 
     return {
       success: true,
       statements: [
         {
-          pdfBytes,
+          pdfBuffer,
+          pdfFilename: `Amerisafe_Statement_${formattedDate}.pdf`,
           statementDate: formattedDate,
         },
       ],
