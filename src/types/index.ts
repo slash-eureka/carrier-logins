@@ -89,4 +89,8 @@ export interface AppConfig {
   };
 }
 
-export type CarrierSlug = 'net_abacus' | 'com_amerisafe' | 'unknown';
+export type CarrierSlug =
+  | 'net_abacus'
+  | 'com_amerisafe'
+  | 'com_apagents'
+  | 'unknown';

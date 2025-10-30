@@ -7,7 +7,7 @@ import type {
   WorkflowResult,
 } from '../types/index.js';
 
-const KNOWN_CARRIERS = new Set(['net_abacus', 'com_amerisafe']);
+const KNOWN_CARRIERS = new Set(['net_abacus', 'com_amerisafe', 'com_apagents']);
 
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
@@ -76,6 +76,10 @@ export async function executeWorkflow(
 
       case 'com_amerisafe':
         workflowModule = await import('../workflows/com_amerisafe.js');
+        break;
+
+      case 'com_apagents':
+        workflowModule = await import('../workflows/com_apagents.js');
         break;
 
       default:
