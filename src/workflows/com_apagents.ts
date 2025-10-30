@@ -120,7 +120,8 @@ export async function runWorkflow(
       success: true,
       statements: [
         {
-          pdfBytes: fileBytes, // Store as pdfBytes for now (can rename field later)
+          pdfBuffer: fileBytes, // Store as pdfBytes for now (can rename field later)
+          pdfFilename: `AP_Statement_${statementDate}.xlsx`,
           statementDate,
         },
       ],
