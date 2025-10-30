@@ -1,13 +1,13 @@
 /**
  * Bitco workflow script
- * Logs into Bitco portal and retrieves commission statement PDF URLs
+ * Logs into Bitco portal and retrieves commission statement PDFs
  */
 
 /* eslint-disable */
 
 import { z } from 'zod';
 import type { Stagehand } from '@browserbasehq/stagehand';
-import type { WorkflowJob, WorkflowResult } from '../types/index.js';
+import type { WorkflowJob, WorkflowResult, Statement } from '../types/index.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 
 /**
@@ -24,132 +24,178 @@ export async function runWorkflow(
   const page = stagehand.page;
 
   try {
-    // Step 1: Navigate to login page
+    // Login
     await page.goto(loginUrl);
-
-    // Step 2: Enter username
     await page.act(`type '${username}' into the User Name input`);
-
-    // Step 3: Enter password
     await page.act(`type '${password}' into the Password input`);
-
-    // Step 4: Click Login button
     await page.act(`click the Login button`);
+    await page.waitForTimeout(2000);
 
-    // Step 5: Navigate to AGENCY INFO
+    // Navigate to statements
     await page.act(`click the AGENCY INFO menu item`);
-
-    // Step 6: Show all Direct Bill Statements
     await page.act(
       `click the Show dropdown in the Direct Bill Statements section`,
     );
-
-    // Step 7: Select "All" to show all statements
-    await page.act(`click the All option in the dropdown`);
-
-    // Wait for table to update
+    await page.act(`click the All option in the Show dropdown`);
     await page.waitForTimeout(2000);
 
-    // Extract all statements from the current page
-    const allStatements: Array<{
-      url: string;
-      statementDate: string;
-    }> = [];
+    // Parse target date for filtering
+    const targetDate = new Date(job.accounting_period_start_date);
 
-    // Track which pages we've visited to avoid infinite loops
-    const visitedPages = new Set<number>();
-    let currentPage = 1;
-    visitedPages.add(currentPage);
+    // Extract statement rows with dates and agency numbers
+    // (extract can see shadow DOM content even though observe can't get selectors)
+    const extractedData = await page.extract({
+      instruction: `Extract all Direct Bill Commission Statement rows from the table with:
+      - Agency number
+      - Statement date in MM/DD/YYYY format
+      - Row number (1, 2, 3, etc.) counting from top to bottom`,
+      schema: z.object({
+        statements: z.array(
+          z.object({
+            agency: z.string(),
+            statementDate: z.string(),
+            rowNumber: z.number(),
+          }),
+        ),
+      }),
+    });
 
-    // Function to extract statements from current page
-    const extractCurrentPageStatements = async () => {
-      const extractedData = await page.extract({
-        instruction: `Extract the URLs of all Direct Bill Commission Statement links in the table, along with their statement dates in YYYY-MM-DD format`,
-        schema: z.object({
-          statements: z.array(
-            z.object({
-              statementDate: z.string(),
-              url: z.string(),
-            }),
-          ),
-        }),
-      });
-
-      return extractedData.statements || [];
-    };
-
-    // Extract statements from first page
-    const firstPageStatements = await extractCurrentPageStatements();
-    allStatements.push(...firstPageStatements);
-
-    // Check if there are multiple pages by trying to navigate to page 2
-    try {
-      // Try to find and click page 2
-      const page2Observations = await page.observe({
-        instruction: `Find the page 2 link in the Direct Bill Statements pagination`,
-        returnAction: false,
-      });
-
-      if (page2Observations && page2Observations.length > 0) {
-        // There's pagination - navigate through all pages
-        await page.act(
-          `click the page 2 link in the Direct Bill Statements section`,
-        );
-        await page.waitForTimeout(2000);
-        currentPage = 2;
-        visitedPages.add(currentPage);
-
-        // Extract from page 2
-        const page2Statements = await extractCurrentPageStatements();
-        allStatements.push(...page2Statements);
-
-        // Continue checking for more pages (3, 4, etc.)
-        let hasMorePages = true;
-        while (hasMorePages && currentPage < 20) {
-          // Safety limit
-          const nextPage = currentPage + 1;
-
-          try {
-            const nextPageObservations = await page.observe({
-              instruction: `Find the page ${nextPage} link in the Direct Bill Statements pagination`,
-              returnAction: false,
-            });
-
-            if (nextPageObservations && nextPageObservations.length > 0) {
-              await page.act(
-                `click the page ${nextPage} link in the Direct Bill Statements section`,
-              );
-              await page.waitForTimeout(2000);
-              currentPage = nextPage;
-              visitedPages.add(currentPage);
-
-              const pageStatements = await extractCurrentPageStatements();
-              allStatements.push(...pageStatements);
-            } else {
-              hasMorePages = false;
-            }
-          } catch {
-            hasMorePages = false;
-          }
+    // Filter statements by accounting period date
+    const filteredStatements = (extractedData.statements || []).filter(
+      (stmt) => {
+        try {
+          const [month, day, year] = stmt.statementDate.split('/');
+          const stmtDate = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+          );
+          return stmtDate >= targetDate;
+        } catch {
+          return false;
         }
-      }
-    } catch {
-      // No pagination or only one page - that's fine
-    }
-
-    // Remove duplicates based on URL
-    const uniqueStatements = Array.from(
-      new Map(allStatements.map((s) => [s.url, s])).values(),
+      },
     );
 
-    // Convert to the expected Statement format
-    const statements = uniqueStatements.map((s) => ({
-      pdfUrl: s.url,
-      statementDate: s.statementDate,
-    }));
+    if (filteredStatements.length === 0) {
+      console.log(
+        `No statements found for accounting period >= ${job.accounting_period_start_date}`,
+      );
+      return {
+        success: true,
+        statements: [],
+      };
+    }
 
-    if (statements.length === 0) {
-      throw new Error('No commission statements found');
+    console.log(
+      `Found ${filteredStatements.length} statements to download for accounting period`,
+    );
+
+    // Download each PDF using route interception
+    const statements: Statement[] = [];
+
+    for (let i = 0; i < filteredStatements.length; i++) {
+      const stmt = filteredStatements[i];
+      console.log(
+        `Downloading statement ${i + 1}/${filteredStatements.length}: Agency ${stmt.agency}, Date ${stmt.statementDate}`,
+      );
+
+      // Set up PDF capture via route interception
+      let pdfBuffer: Buffer | null = null;
+
+      await page.route('**/*', async (route: any) => {
+        try {
+          const response = await route.fetch();
+          const contentType = response.headers()['content-type'] || '';
+
+          // Check if this is a PDF response
+          if (
+            contentType.includes('pdf') ||
+            response.url().includes('Document=')
+          ) {
+            const buffer = (await response.body()) as Buffer;
+
+            if (buffer && buffer.length > 0) {
+              pdfBuffer = buffer;
+              console.log('PDF captured, size:', buffer.length);
+            }
+          }
+
+          await route.fulfill({ response });
+        } catch (err: any) {
+          console.error('Error in route handler:', err.message);
+          try {
+            await route.continue();
+          } catch (e) {
+            console.error('Failed to continue route:', e);
+          }
+        }
+      });
+
+      try {
+        // Click using natural language instruction (works with shadow DOM)
+        // Be specific with agency number and date to target the right row
+        await page.act(
+          `click the Direct Bill Commission Statement link for Agency ${stmt.agency} with statement date ${stmt.statementDate}`,
+        );
+
+        // Wait for PDF capture with timeout
+        const startTime = Date.now();
+        while (!pdfBuffer && Date.now() - startTime < 8000) {
+          await page.waitForTimeout(500);
+        }
+
+        // Close any blob URL tabs or PDF tabs that opened
+        try {
+          const pages = page.context().pages();
+          for (const p of pages) {
+            if (p !== page) {
+              await p.close();
+            }
+          }
+        } catch (err) {
+          console.log('Error closing popup pages:', err);
+        }
+
+        if (!pdfBuffer) {
+          console.warn(
+            `Failed to capture PDF for Agency ${stmt.agency}, Date ${stmt.statementDate}`,
+          );
+          await page.unroute('**/*');
+          continue;
+        }
+
+        // Generate filename from metadata
+        const dateForFilename = stmt.statementDate.replace(/\//g, '-');
+        const filename = `Bitco_Statement_Agency${stmt.agency}_${dateForFilename}.pdf`;
+
+        // Normalize date to YYYY-MM-DD format
+        const [month, day, year] = stmt.statementDate.split('/');
+        const normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+        statements.push({
+          pdfBuffer,
+          pdfFilename: filename,
+          statementDate: normalizedDate,
+        });
+
+        console.log(`Successfully captured: ${filename}`);
+        console.log(
+          `First 16 bytes of PDF: ${pdfBuffer!.slice(0, 16).toString('hex')}`,
+        );
+      } catch (err: any) {
+        console.error(
+          `Error downloading statement for Agency ${stmt.agency}:`,
+          err.message,
+        );
+        // Continue to next statement
+      } finally {
+        // Remove route handler
+        await page.unroute('**/*');
+
+        // Small delay between downloads
+        await page.waitForTimeout(1000);
+      }
     }
 
     return {
