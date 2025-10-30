@@ -238,36 +238,49 @@ return {
 };
 ```
 
-##### Option B: Blob URLs (like com_ufginsurance.ts)
+##### Option B: Route Interception for Blob URLs (like com_ufginsurance.ts)
 
-When PDFs use blob URLs or need to be captured as buffers:
+When PDFs are served as blob URLs or need to be captured from network responses:
 
 ```typescript
-// Set up listener for new page/tab
-const [newPage] = await Promise.all([
-  page.context().waitForEvent('page'),
-  page.act(`click the Download Statement button`),
-]);
+// Set up route interception to capture PDF data
+let pdfBuffer: Buffer | null = null;
 
-// Wait for PDF to load
-await newPage.waitForLoadState('load', { timeout: 10000 });
+await page.route('**/*statement*', async (route: any) => {
+  const response = await route.fetch();
+  const buffer = (await response.body()) as Buffer;
 
-// Capture PDF as buffer
-const pdfBuffer = await newPage.pdf({
-  format: 'Letter',
-  printBackground: true,
+  if (buffer && buffer.length > 0) {
+    pdfBuffer = buffer;
+  }
+
+  await route.fulfill({ response });
 });
 
-const filename = `Statement_${job.accounting_period_start_date}.pdf`;
+// Find and click the download button
+const buttonAction = await page.observe({
+  instruction: `Find the Download Statement button`,
+  returnAction: true,
+});
 
-await newPage.close();
+await page.locator(buttonAction[0].selector).click();
+
+// Wait for PDF to be captured via route interception
+const startTime = Date.now();
+while (!pdfBuffer && Date.now() - startTime < 8000) {
+  await page.waitForTimeout(500);
+}
+
+if (!pdfBuffer) {
+  throw new Error('Failed to capture PDF');
+}
 
 return {
   success: true,
   statements: [
     {
-      pdfBuffer: pdfBuffer,
-      pdfFilename: filename,
+      pdfBuffer,
+      pdfFilename: `Statement_${job.accounting_period_start_date}.pdf`,
       statementDate: job.accounting_period_start_date,
     },
   ],
@@ -459,6 +472,6 @@ See existing workflow implementations:
 - **`src/workflows/com_ufginsurance.ts`** - Blob URL with PDF buffer capture
 
 ### TODO
-- should I generate new org token?
+- generate new org session token for auth
 - figure out how I should ensure that workflows don't fail silently?
 - change the folder that statements are uploaded to
