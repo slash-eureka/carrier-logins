@@ -52,7 +52,7 @@ function buildUploadOptions(
   const {
     carrierName,
     metadata = {},
-    overwrite = true,
+    overwrite = false,
     uniqueFilename = false,
     invalidate = false,
   } = options;
