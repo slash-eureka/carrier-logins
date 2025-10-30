@@ -1,5 +1,19 @@
-import { filterStatementsByDate } from '../../services/statement-processor.js';
+import {
+  filterStatementsByDate,
+  processStatement,
+} from '../../services/statement-processor.js';
 import type { Statement } from '../../types/index.js';
+import { downloadPdf, extractFilename } from '../../lib/pdf-downloader.js';
+import { uploadPdf } from '../../lib/cloudinary-service.js';
+
+jest.mock('../../lib/pdf-downloader.js');
+jest.mock('../../lib/cloudinary-service.js');
+
+const mockDownloadPdf = downloadPdf as jest.MockedFunction<typeof downloadPdf>;
+const mockExtractFilename = extractFilename as jest.MockedFunction<
+  typeof extractFilename
+>;
+const mockUploadPdf = uploadPdf as jest.MockedFunction<typeof uploadPdf>;
 
 describe('statement-processor', () => {
   describe('filterStatementsByDate', () => {
@@ -36,6 +50,225 @@ describe('statement-processor', () => {
     it('should handle empty statements array', () => {
       const filtered = filterStatementsByDate([], '2024-01-01');
       expect(filtered).toHaveLength(0);
+    });
+  });
+
+  describe('processStatement', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe('with pdfUrl (direct URL download)', () => {
+      it('should download PDF from URL and upload to Cloudinary', async () => {
+        const statement: Statement = {
+          pdfUrl: 'https://example.com/statement.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
+        const mockAttachment = {
+          public_id: 'supplier_statements/net_abacus/statement',
+          format: 'pdf',
+          url: 'https://cloudinary.com/statement.pdf',
+          title: 'statement.pdf',
+          etag: 'abc123',
+        };
+
+        mockDownloadPdf.mockResolvedValue(mockBuffer);
+        mockExtractFilename.mockReturnValue('statement.pdf');
+        mockUploadPdf.mockResolvedValue(mockAttachment);
+
+        const result = await processStatement(statement, 'net_abacus');
+
+        expect(mockDownloadPdf).toHaveBeenCalledWith(
+          'https://example.com/statement.pdf',
+        );
+        expect(mockExtractFilename).toHaveBeenCalledWith(
+          'https://example.com/statement.pdf',
+        );
+        expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
+          carrierName: 'net_abacus',
+          filename: 'statement.pdf',
+          metadata: {
+            statement_date: '2024-01-15',
+            carrier: 'net_abacus',
+          },
+        });
+        expect(result).toEqual(mockAttachment);
+      });
+
+      it('should throw error if pdfUrl download fails', async () => {
+        const statement: Statement = {
+          pdfUrl: 'https://example.com/statement.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        mockDownloadPdf.mockRejectedValue(new Error('Download failed'));
+
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Download failed',
+        );
+      });
+    });
+
+    describe('with pdfBuffer (pre-captured PDF)', () => {
+      it('should use buffer directly and upload to Cloudinary', async () => {
+        const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
+        const statement: Statement = {
+          pdfBuffer: mockBuffer,
+          pdfFilename: 'UFG_Statement_2024-01-15.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        const mockAttachment = {
+          public_id: 'supplier_statements/com_ufginsurance/UFG_Statement',
+          format: 'pdf',
+          url: 'https://cloudinary.com/ufg_statement.pdf',
+          title: 'UFG_Statement_2024-01-15.pdf',
+          etag: 'xyz789',
+        };
+
+        mockUploadPdf.mockResolvedValue(mockAttachment);
+
+        const result = await processStatement(statement, 'com_ufginsurance');
+
+        expect(mockDownloadPdf).not.toHaveBeenCalled();
+        expect(mockExtractFilename).not.toHaveBeenCalled();
+
+        expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
+          carrierName: 'com_ufginsurance',
+          filename: 'UFG_Statement_2024-01-15.pdf',
+          metadata: {
+            statement_date: '2024-01-15',
+            carrier: 'com_ufginsurance',
+          },
+        });
+        expect(result).toEqual(mockAttachment);
+      });
+
+      it('should use default filename if pdfFilename is not provided', async () => {
+        const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
+        const statement: Statement = {
+          pdfBuffer: mockBuffer,
+          statementDate: '2024-01-15',
+        };
+
+        const mockAttachment = {
+          public_id: 'supplier_statements/com_ufginsurance/statement',
+          format: 'pdf',
+          url: 'https://cloudinary.com/statement.pdf',
+          title: 'statement.pdf',
+          etag: 'default123',
+        };
+
+        mockUploadPdf.mockResolvedValue(mockAttachment);
+
+        const result = await processStatement(statement, 'com_ufginsurance');
+
+        expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
+          carrierName: 'com_ufginsurance',
+          filename: 'statement.pdf',
+          metadata: {
+            statement_date: '2024-01-15',
+            carrier: 'com_ufginsurance',
+          },
+        });
+        expect(result).toEqual(mockAttachment);
+      });
+
+      it('should throw error if pdfBuffer upload fails', async () => {
+        const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
+        const statement: Statement = {
+          pdfBuffer: mockBuffer,
+          pdfFilename: 'statement.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        mockUploadPdf.mockRejectedValue(new Error('Upload failed'));
+
+        await expect(
+          processStatement(statement, 'com_ufginsurance'),
+        ).rejects.toThrow('Upload failed');
+      });
+    });
+
+    describe('error cases', () => {
+      it('should throw error if statement has neither pdfUrl nor pdfBuffer', async () => {
+        const statement: Statement = {
+          statementDate: '2024-01-15',
+        };
+
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Statement has neither pdfUrl nor pdfBuffer',
+        );
+
+        expect(mockDownloadPdf).not.toHaveBeenCalled();
+        expect(mockUploadPdf).not.toHaveBeenCalled();
+      });
+
+      it('should throw error if pdfBuffer is empty', async () => {
+        const statement: Statement = {
+          pdfBuffer: Buffer.from([]),
+          statementDate: '2024-01-15',
+        };
+
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'PDF buffer is empty or null',
+        );
+
+        expect(mockUploadPdf).not.toHaveBeenCalled();
+      });
+
+      it('should throw error if pdfBuffer does not have valid PDF header', async () => {
+        const statement: Statement = {
+          pdfBuffer: Buffer.from('<!DOCTYPE html>'),
+          pdfFilename: 'error.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
+          'Invalid PDF: expected header "%PDF" but got "<!DO"',
+        );
+
+        expect(mockUploadPdf).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('pdfBuffer priority', () => {
+      it('should prefer pdfBuffer over pdfUrl when both are present', async () => {
+        const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
+        const statement: Statement = {
+          pdfUrl: 'https://example.com/statement.pdf',
+          pdfBuffer: mockBuffer,
+          pdfFilename: 'buffer_statement.pdf',
+          statementDate: '2024-01-15',
+        };
+
+        const mockAttachment = {
+          public_id: 'supplier_statements/net_abacus/buffer_statement',
+          format: 'pdf',
+          url: 'https://cloudinary.com/buffer_statement.pdf',
+          title: 'buffer_statement.pdf',
+          etag: 'buffer123',
+        };
+
+        mockUploadPdf.mockResolvedValue(mockAttachment);
+
+        const result = await processStatement(statement, 'net_abacus');
+
+        expect(mockDownloadPdf).not.toHaveBeenCalled();
+        expect(mockExtractFilename).not.toHaveBeenCalled();
+
+        expect(mockUploadPdf).toHaveBeenCalledWith(mockBuffer, {
+          carrierName: 'net_abacus',
+          filename: 'buffer_statement.pdf',
+          metadata: {
+            statement_date: '2024-01-15',
+            carrier: 'net_abacus',
+          },
+        });
+        expect(result).toEqual(mockAttachment);
+      });
     });
   });
 });

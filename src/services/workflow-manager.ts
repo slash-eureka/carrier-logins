@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import type { Stagehand } from '@browserbasehq/stagehand';
 import { createStagehandClient } from '../lib/stagehand-client.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 import type {
@@ -7,7 +8,12 @@ import type {
   WorkflowResult,
 } from '../types/index.js';
 
-const KNOWN_CARRIERS = new Set(['net_abacus', 'com_amerisafe', 'com_apagents']);
+interface WorkflowModule {
+  runWorkflow: (
+    stagehand: Stagehand,
+    job: WorkflowJob,
+  ) => Promise<WorkflowResult>;
+}
 
 /**
  * Identify carrier from login URL using reverse domain notation with underscores
@@ -18,8 +24,7 @@ export function identify(loginUrl: string): CarrierSlug {
   try {
     const url = new URL(loginUrl);
     const hostname = url.hostname.toLowerCase();
-    const slug = extractReverseDomainSlug(hostname);
-    return KNOWN_CARRIERS.has(slug) ? (slug as CarrierSlug) : 'unknown';
+    return extractReverseDomainSlug(hostname);
   } catch {
     return 'unknown';
   }
@@ -68,31 +73,24 @@ export async function executeWorkflow(
   try {
     client = await createStagehandClient();
 
-    let workflowModule;
-    switch (carrierSlug) {
-      case 'net_abacus':
-        workflowModule = await import('../workflows/net_abacus.js');
-        break;
+    // Dynamically import workflow module using carrier slug
+    const workflowModule = (await import(
+      `../workflows/${carrierSlug}.js`
+    )) as WorkflowModule;
 
-      case 'com_amerisafe':
-        workflowModule = await import('../workflows/com_amerisafe.js');
-        break;
-
-      case 'com_apagents':
-        workflowModule = await import('../workflows/com_apagents.js');
-        break;
-
-      default:
-        return {
-          success: false,
-          statements: [],
-          error: `No workflow script implemented for carrier: ${String(carrierSlug)}`,
-        };
+    return workflowModule.runWorkflow(client.stagehand, job);
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Cannot find module')
+    ) {
+      return {
+        success: false,
+        statements: [],
+        error: `No workflow implemented for carrier: ${carrierSlug}`,
+      };
     }
 
-    const result = await workflowModule.runWorkflow(client.stagehand, job);
-    return result;
-  } catch (error: unknown) {
     Sentry.captureException(error);
     return {
       success: false,

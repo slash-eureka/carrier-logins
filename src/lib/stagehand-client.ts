@@ -18,7 +18,6 @@ export async function createStagehandClient(): Promise<StagehandClient> {
     projectId: config.browserbase.projectId,
     verbose: 1,
     modelName: 'google/gemini-2.0-flash-exp',
-    disablePino: true,
     modelClientOptions: {
       apiKey: config.gemini.apiKey,
     },

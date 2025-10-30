@@ -26,6 +26,23 @@ export function filterStatementsByDate(
 }
 
 /**
+ * Validate that a buffer contains a valid PDF
+ * @param buffer - Buffer to validate
+ * @throws Error if buffer is not a valid PDF
+ */
+function validatePdfBuffer(buffer: Buffer): void {
+  if (!buffer || buffer.length === 0) {
+    throw new Error('PDF buffer is empty or null');
+  }
+  const header = buffer.slice(0, 4).toString('ascii');
+  if (header !== '%PDF') {
+    throw new Error(
+      `Invalid PDF: expected header "%PDF" but got "${header}" (bytes: ${buffer.slice(0, 4).join(' ')})`,
+    );
+  }
+}
+
+/**
  * Process and upload a single statement to Cloudinary
  * @param statement - Statement to process
  * @param carrierSlug - Carrier slug in reverse domain notation
@@ -35,14 +52,20 @@ export async function processStatement(
   statement: Statement,
   carrierSlug: CarrierSlug,
 ): Promise<CloudinaryAttachment> {
-  if (!statement.pdfUrl) {
-    throw new Error('Statement has no PDF URL');
+  const { pdfBuffer: buffer, pdfUrl, pdfFilename } = statement;
+
+  if (!buffer && !pdfUrl) {
+    throw new Error('Statement has neither pdfUrl nor pdfBuffer');
   }
 
-  const pdfBuffer = await downloadPdf(statement.pdfUrl);
-  const filename = extractFilename(statement.pdfUrl);
+  const pdfBuffer = buffer || (await downloadPdf(pdfUrl!));
+  const filename = buffer
+    ? pdfFilename || 'statement.pdf'
+    : extractFilename(pdfUrl!);
 
-  const attachment = await uploadPdf(pdfBuffer, {
+  validatePdfBuffer(pdfBuffer);
+
+  return uploadPdf(pdfBuffer, {
     carrierName: carrierSlug,
     filename,
     metadata: {
@@ -50,8 +73,6 @@ export async function processStatement(
       carrier: carrierSlug,
     },
   });
-
-  return attachment;
 }
 
 /**
