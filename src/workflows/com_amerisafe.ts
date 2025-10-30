@@ -140,7 +140,8 @@ export async function runWorkflow(
       success: true,
       statements: [
         {
-          pdfBytes,
+          fileBuffer: pdfBytes,
+          filename: `Amerisafe_Statement_${formattedDate}.pdf`,
           statementDate: formattedDate,
         },
       ],

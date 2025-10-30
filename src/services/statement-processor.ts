@@ -52,15 +52,15 @@ export async function processStatement(
   statement: Statement,
   carrierSlug: CarrierSlug,
 ): Promise<CloudinaryAttachment> {
-  const { pdfBuffer: buffer, pdfUrl, pdfFilename } = statement;
+  const { fileBuffer: buffer, pdfUrl, filename: statementFilename } = statement;
 
   if (!buffer && !pdfUrl) {
-    throw new Error('Statement has neither pdfUrl nor pdfBuffer');
+    throw new Error('Statement has neither pdfUrl nor fileBuffer');
   }
 
   const pdfBuffer = buffer || (await downloadPdf(pdfUrl!));
   const filename = buffer
-    ? pdfFilename || 'statement.pdf'
+    ? statementFilename || 'statement.pdf'
     : extractFilename(pdfUrl!);
 
   validatePdfBuffer(pdfBuffer);

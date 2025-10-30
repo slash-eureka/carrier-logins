@@ -39,13 +39,54 @@ export async function runWorkflow(
     // Wait for the page to load
     await page.waitForTimeout(2000);
 
-    // Step 5: Find the download button and extract its URL
+    // Step 5: Extract all statements from the table
+    const extractedStatements = await page.extract({
+      instruction: `Extract all statements from the table. For each row, get the month, year, and row number.`,
+      schema: z.object({
+        statements: z.array(
+          z.object({
+            month: z.string(),
+            year: z.string(),
+            rowNumber: z.number().optional(),
+          })
+        ),
+      }),
+    });
+
+    if (!extractedStatements.statements || extractedStatements.statements.length === 0) {
+      throw new Error('No statements found in the table');
+    }
+
+    // Parse the target date from job (format: YYYY-MM-DD)
+    // Use UTC to avoid timezone issues
+    const [year, month, day] = job.accounting_period_start_date.split('-').map(Number);
+    const targetDate = new Date(Date.UTC(year, month - 1, day));
+    const targetMonth = targetDate.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+    const targetYear = targetDate.getUTCFullYear().toString();
+
+    console.log(`Looking for statement: ${targetMonth} ${targetYear}`);
+    console.log(`Available statements: ${extractedStatements.statements.map(s => `${s.month} ${s.year}`).join(', ')}`);
+
+    // Find the matching statement
+    const matchingStatement = extractedStatements.statements.find(
+      (stmt) =>
+        stmt.month.toLowerCase() === targetMonth.toLowerCase() &&
+        stmt.year === targetYear
+    );
+
+    if (!matchingStatement) {
+      throw new Error(
+        `No statement found for ${targetMonth} ${targetYear}. Available: ${extractedStatements.statements.map(s => `${s.month} ${s.year}`).join(', ')}`
+      );
+    }
+
+    // Step 6: Find the download button for the matching statement
     const downloadButtons = await page.observe(
-      `Find the first download button in row 1`
+      `Find the download button in the row with ${matchingStatement.month} ${matchingStatement.year}`
     );
     
     if (!downloadButtons || downloadButtons.length === 0) {
-      throw new Error('Could not find download button');
+      throw new Error(`Could not find download button for ${matchingStatement.month} ${matchingStatement.year}`);
     }
 
     const buttonLocator = page.locator(downloadButtons[0].selector);
@@ -99,29 +140,16 @@ export async function runWorkflow(
       throw new Error('Downloaded file is empty');
     }
 
-    // Step 6: Extract metadata about the statement
-    const extractedData = await page.extract({
-      instruction: `Extract the details of the first statement in the table (row 1) including the date, filename, month, year, and parent name`,
-      schema: z.object({
-        date: z.string().optional(),
-        filename: z.string().optional(),
-        month: z.string().optional(),
-        year: z.string().optional(),
-        parentName: z.string().optional(),
-      }),
-    });
+    const statementDate = job.accounting_period_start_date;
 
-    // Use the extracted date or fall back to accounting period from job
-    const statementDate = extractedData?.date || job.accounting_period_start_date;
-
-    console.log(`Successfully captured Excel file: ${fileBytes.length} bytes for statement date ${statementDate}`);
+    console.log(`Successfully captured Excel file: ${fileBytes.length} bytes for ${matchingStatement.month} ${matchingStatement.year}`);
 
     return {
       success: true,
       statements: [
         {
-          pdfBuffer: fileBytes, // Store as pdfBytes for now (can rename field later)
-          pdfFilename: `AP_Statement_${statementDate}.xlsx`,
+          fileBuffer: fileBytes,
+          filename: `AP_Statement_${matchingStatement.month}_${matchingStatement.year}.xlsx`,
           statementDate,
         },
       ],
