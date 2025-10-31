@@ -158,8 +158,8 @@ export async function runWorkflow(
       success: true,
       statements: [
         {
-          pdfBuffer,
-          pdfFilename: filename,
+          fileBuffer: pdfBuffer,
+          filename,
           statementDate: job.accounting_period_start_date,
         },
       ],

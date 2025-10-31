@@ -81,8 +81,8 @@ function buildUploadOptions(
  * @throws {Error} If upload fails or returns no result
  *
  * @example
- * const pdfBuffer = await downloadPdf(url);
- * const attachment = await uploadPdf(pdfBuffer, {
+ * const fileBuffer = await downloadPdf(url);
+ * const attachment = await uploadPdf(fileBuffer, {
  *   carrierName: 'net_abacus',
  *   filename: 'statement_2024-01.pdf',
  *   metadata: { statement_date: '2024-01-01' },
