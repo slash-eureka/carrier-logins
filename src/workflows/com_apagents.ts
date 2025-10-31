@@ -27,27 +27,20 @@ export async function runWorkflow(
     // Step 1: Navigate to login page
     await page.goto(loginUrl);
 
-    // Step 2: Type username into Email/Username input
+    // Step 2: Enter credentials and login
     await page.act(`type '${username}' into the Email/Username input`);
-
-    // Step 3: Type password into Password input
     await page.act(`type '${password}' into the Password input`);
-
-    // Step 4: Click Login button
     await page.act(`click the Login button`);
-
-    // Wait for the page to load
     await page.waitForTimeout(2000);
 
-    // Step 5: Extract all statements from the table
+    // Step 3: Extract all statements from the table
     const extractedStatements = await page.extract({
-      instruction: `Extract all statements from the table. For each row, get the month, year, and row number.`,
+      instruction: `Extract all statements from the table. For each row, get the month and year.`,
       schema: z.object({
         statements: z.array(
           z.object({
             month: z.string(),
             year: z.string(),
-            rowNumber: z.number().optional(),
           }),
         ),
       }),
@@ -60,7 +53,7 @@ export async function runWorkflow(
       throw new Error('No statements found in the table');
     }
 
-    // Parse the target date from job (format: YYYY-MM-DD)
+    // Step 4: Parse target date and find matching statement
     // Use UTC to avoid timezone issues
     const [year, month, day] = job.accounting_period_start_date
       .split('-')
@@ -90,7 +83,7 @@ export async function runWorkflow(
       );
     }
 
-    // Step 6: Find the download button for the matching statement
+    // Step 5: Locate the download button for the matching statement
     const downloadButtons = await page.observe(
       `Find the download button in the row with ${matchingStatement.month} ${matchingStatement.year}`,
     );
@@ -103,6 +96,7 @@ export async function runWorkflow(
 
     const buttonLocator = page.locator(downloadButtons[0].selector);
 
+    // Step 6: Extract form data and download the file
     // Extract form data from the button
     const buttonInfo = await buttonLocator.evaluate((el: any) => {
       const form = el.closest('form');
@@ -127,12 +121,10 @@ export async function runWorkflow(
       };
     });
 
-    // Download the Excel file by submitting the form via POST
     if (!buttonInfo.formAction || !buttonInfo.buttonName) {
       throw new Error('Download button does not have expected form structure');
     }
 
-    // Add the button's name/value to form data
     const postData = {
       ...buttonInfo.formData,
       [buttonInfo.buttonName]: buttonInfo.buttonValue,
