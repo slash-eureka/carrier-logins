@@ -48,49 +48,61 @@ export async function runWorkflow(
             month: z.string(),
             year: z.string(),
             rowNumber: z.number().optional(),
-          })
+          }),
         ),
       }),
     });
 
-    if (!extractedStatements.statements || extractedStatements.statements.length === 0) {
+    if (
+      !extractedStatements.statements ||
+      extractedStatements.statements.length === 0
+    ) {
       throw new Error('No statements found in the table');
     }
 
     // Parse the target date from job (format: YYYY-MM-DD)
     // Use UTC to avoid timezone issues
-    const [year, month, day] = job.accounting_period_start_date.split('-').map(Number);
+    const [year, month, day] = job.accounting_period_start_date
+      .split('-')
+      .map(Number);
     const targetDate = new Date(Date.UTC(year, month - 1, day));
-    const targetMonth = targetDate.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+    const targetMonth = targetDate.toLocaleString('en-US', {
+      month: 'long',
+      timeZone: 'UTC',
+    });
     const targetYear = targetDate.getUTCFullYear().toString();
 
     console.log(`Looking for statement: ${targetMonth} ${targetYear}`);
-    console.log(`Available statements: ${extractedStatements.statements.map(s => `${s.month} ${s.year}`).join(', ')}`);
+    console.log(
+      `Available statements: ${extractedStatements.statements.map((s) => `${s.month} ${s.year}`).join(', ')}`,
+    );
 
     // Find the matching statement
     const matchingStatement = extractedStatements.statements.find(
       (stmt) =>
         stmt.month.toLowerCase() === targetMonth.toLowerCase() &&
-        stmt.year === targetYear
+        stmt.year === targetYear,
     );
 
     if (!matchingStatement) {
       throw new Error(
-        `No statement found for ${targetMonth} ${targetYear}. Available: ${extractedStatements.statements.map(s => `${s.month} ${s.year}`).join(', ')}`
+        `No statement found for ${targetMonth} ${targetYear}. Available: ${extractedStatements.statements.map((s) => `${s.month} ${s.year}`).join(', ')}`,
       );
     }
 
     // Step 6: Find the download button for the matching statement
     const downloadButtons = await page.observe(
-      `Find the download button in the row with ${matchingStatement.month} ${matchingStatement.year}`
+      `Find the download button in the row with ${matchingStatement.month} ${matchingStatement.year}`,
     );
-    
+
     if (!downloadButtons || downloadButtons.length === 0) {
-      throw new Error(`Could not find download button for ${matchingStatement.month} ${matchingStatement.year}`);
+      throw new Error(
+        `Could not find download button for ${matchingStatement.month} ${matchingStatement.year}`,
+      );
     }
 
     const buttonLocator = page.locator(downloadButtons[0].selector);
-    
+
     // Extract form data from the button
     const buttonInfo = await buttonLocator.evaluate((el: any) => {
       const form = el.closest('form');
@@ -100,13 +112,13 @@ export async function runWorkflow(
 
       const formData: any = {};
       const inputs = form.querySelectorAll('input, button, select, textarea');
-      
+
       inputs.forEach((input: any) => {
         if (input.name) {
           formData[input.name] = input.value;
         }
       });
-      
+
       return {
         formAction: form.action,
         formData,
@@ -125,13 +137,15 @@ export async function runWorkflow(
       ...buttonInfo.formData,
       [buttonInfo.buttonName]: buttonInfo.buttonValue,
     };
-    
+
     const response = await page.request.post(buttonInfo.formAction, {
       form: postData,
     });
-    
+
     if (!response.ok()) {
-      throw new Error(`Failed to fetch Excel file: ${response.status()} ${response.statusText()}`);
+      throw new Error(
+        `Failed to fetch Excel file: ${response.status()} ${response.statusText()}`,
+      );
     }
 
     const fileBytes = await response.body();
@@ -142,7 +156,9 @@ export async function runWorkflow(
 
     const statementDate = job.accounting_period_start_date;
 
-    console.log(`Successfully captured Excel file: ${fileBytes.length} bytes for ${matchingStatement.month} ${matchingStatement.year}`);
+    console.log(
+      `Successfully captured Excel file: ${fileBytes.length} bytes for ${matchingStatement.month} ${matchingStatement.year}`,
+    );
 
     return {
       success: true,
@@ -162,4 +178,3 @@ export async function runWorkflow(
     };
   }
 }
-
