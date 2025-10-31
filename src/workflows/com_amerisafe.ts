@@ -10,12 +10,6 @@ import type { WorkflowJob, WorkflowResult } from '../types/index.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 
 /**
- * Run workflow for Amerisafe supplier statement fetching
- * @param stagehand - Stagehand client instance
- * @param job - Workflow job with credentials and metadata
- * @returns Promise with success status and statements
- */
-/**
  * Convert date from YYYY-MM-DD to MM/DD/YYYY format
  * @param dateString - Date in YYYY-MM-DD or MM/DD/YYYY format
  * @returns Date in MM/DD/YYYY format
@@ -32,10 +26,15 @@ function formatDateForAmerisafe(dateString: string): string {
     return `${month}/${day}/${year}`;
   }
 
-  // Return as-is if format is unrecognized
   return dateString;
 }
 
+/**
+ * Run workflow for Amerisafe supplier statement fetching
+ * @param stagehand - Stagehand client instance
+ * @param job - Workflow job with credentials and metadata
+ * @returns Promise with success status and statements
+ */
 export async function runWorkflow(
   stagehand: Stagehand,
   job: WorkflowJob,
@@ -49,31 +48,27 @@ export async function runWorkflow(
       job.accounting_period_start_date,
     );
 
-    // Step 1: Navigate to login page
     await page.goto(loginUrl);
 
-    // Step 2: Type username into User Name input field
     await page.act(`type '${username}' into the User Name input field`);
 
-    // Step 3: Type password into Password input field
     await page.act(`type '${password}' into the Password input field`);
 
-    // Step 4: Click Login button
     await page.act(`click the Login button`);
 
-    // Step 5: Click Commission Statements link
     await page.act(`click the Commission Statements link`);
 
-    // Wait for the page to load
     await page.waitForTimeout(2000);
 
-    // Step 6: Find the statement link for the accounting period and get its URL
     const statementLinks = await page.observe(
       `Find the link for the ${formattedDate} statement`,
     );
 
     if (!statementLinks || statementLinks.length === 0) {
-      throw new Error(`Could not find statement link for ${formattedDate}`);
+      return {
+        success: true,
+        statements: [],
+      };
     }
 
     // Get the statement link
@@ -81,7 +76,7 @@ export async function runWorkflow(
 
     // Set up promise to wait for the PDF response
     let pdfUrl: string | null = null;
-    let pdfBytes: Buffer | null = null as Buffer | null;
+    let pdfBuffer: Buffer | null = null;
     let resolvePdfUrl: ((url: string) => void) | null = null;
 
     const pdfUrlPromise = new Promise<string>((resolve, reject) => {
@@ -92,7 +87,7 @@ export async function runWorkflow(
         if (!pdfUrl) {
           reject(new Error('Timeout waiting for PDF response'));
         }
-      }, 10000); // 10 second max timeout
+      }, 10000);
     });
 
     // Listen for PDF response (link uses JavaScript postback that returns PDF directly)
@@ -125,23 +120,23 @@ export async function runWorkflow(
         );
       }
 
-      pdfBytes = await response.body();
+      pdfBuffer = await response.body();
     }
 
-    if (!pdfBytes || pdfBytes.length === 0) {
+    if (!pdfBuffer || pdfBuffer.length === 0) {
       throw new Error('Failed to capture PDF content');
     }
 
     console.log(
-      `Successfully captured PDF: ${pdfBytes.length} bytes for statement date ${formattedDate}`,
+      `Successfully captured PDF: ${pdfBuffer.length} bytes for statement date ${formattedDate}`,
     );
 
     return {
       success: true,
       statements: [
         {
-          fileBuffer: pdfBytes,
-          filename: `Amerisafe_Statement_${formattedDate}.pdf`,
+          pdfBuffer,
+          pdfFilename: `Amerisafe_Statement_${formattedDate}.pdf`,
           statementDate: formattedDate,
         },
       ],
