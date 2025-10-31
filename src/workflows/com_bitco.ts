@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { Stagehand } from '@browserbasehq/stagehand';
 import type { WorkflowJob, WorkflowResult, Statement } from '../types/index.js';
 import { getErrorMessage } from '../lib/error-utils.js';
+import { debugRepl } from '../lib/debug-repl.js';
 
 /**
  * Run workflow for Bitco supplier statement fetching
@@ -21,35 +22,39 @@ export async function runWorkflow(
   job: WorkflowJob,
 ): Promise<WorkflowResult> {
   const { username, password, login_url: loginUrl } = job.credential;
-  const page = stagehand.page;
+  const page = stagehand.context.pages()[0];
 
   try {
     // Login
     await page.goto(loginUrl);
-    await page.act(`type '${username}' into the User Name input`);
-    await page.act(`type '${password}' into the Password input`);
-    await page.act(`click the Login button`);
-    await page.waitForTimeout(2000);
+    await stagehand.act(`type '${username}' into the User Name input`);
+    await stagehand.act(`type '${password}' into the Password input`);
+    await stagehand.act(`click the Login button`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
 
     // Navigate to statements
-    await page.act(`click the AGENCY INFO menu item`);
-    await page.act(
+    await stagehand.act(`click the AGENCY INFO menu item`);
+    await stagehand.act(
       `click the Show dropdown in the Direct Bill Statements section`,
     );
-    await page.act(`click the All option in the Show dropdown`);
-    await page.waitForTimeout(2000);
+    await stagehand.act(`click the All option in the Show dropdown`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // 🔍 Interactive breakpoint - comment out when not debugging
+    await debugRepl(stagehand);
 
     // Parse target date for filtering
     const targetDate = new Date(job.accounting_period_start_date);
 
     // Extract statement rows with dates and agency numbers
     // (extract can see shadow DOM content even though observe can't get selectors)
-    const extractedData = await page.extract({
-      instruction: `Extract all Direct Bill Commission Statement rows from the table with:
+    const extractedData = await stagehand.extract(
+      `Extract all Direct Bill Commission Statement rows from the table with:
       - Agency number
       - Statement date in MM/DD/YYYY format
       - Row number (1, 2, 3, etc.) counting from top to bottom`,
-      schema: z.object({
+      z.object({
         statements: z.array(
           z.object({
             agency: z.string(),
@@ -58,7 +63,7 @@ export async function runWorkflow(
           }),
         ),
       }),
-    });
+    );
 
     // Filter statements by accounting period date
     const filteredStatements = (extractedData.statements || []).filter(
@@ -87,120 +92,145 @@ export async function runWorkflow(
       };
     }
 
+    console.log("WHAT")
+    debugger;
     console.log(
       `Found ${filteredStatements.length} statements to download for accounting period`,
     );
 
-    // Download each PDF using route interception
-    const statements: Statement[] = [];
-
-    for (let i = 0; i < filteredStatements.length; i++) {
-      const stmt = filteredStatements[i];
-      console.log(
-        `Downloading statement ${i + 1}/${filteredStatements.length}: Agency ${stmt.agency}, Date ${stmt.statementDate}`,
-      );
-
-      // Set up PDF capture via route interception
-      let pdfBuffer: Buffer | null = null;
-
-      await page.route('**/*', async (route: any) => {
-        try {
-          const response = await route.fetch();
-          const contentType = response.headers()['content-type'] || '';
-
-          // Check if this is a PDF response
-          if (
-            contentType.includes('pdf') ||
-            response.url().includes('Document=')
-          ) {
-            const buffer = (await response.body()) as Buffer;
-
-            if (buffer && buffer.length > 0) {
-              pdfBuffer = buffer;
-              console.log('PDF captured, size:', buffer.length);
-            }
-          }
-
-          await route.fulfill({ response });
-        } catch (err: any) {
-          console.error('Error in route handler:', err.message);
-          try {
-            await route.continue();
-          } catch (e) {
-            console.error('Failed to continue route:', e);
-          }
-        }
-      });
-
-      try {
-        // Click using natural language instruction (works with shadow DOM)
-        // Be specific with agency number and date to target the right row
-        await page.act(
-          `click the Direct Bill Commission Statement link for Agency ${stmt.agency} with statement date ${stmt.statementDate}`,
-        );
-
-        // Wait for PDF capture with timeout
-        const startTime = Date.now();
-        while (!pdfBuffer && Date.now() - startTime < 8000) {
-          await page.waitForTimeout(500);
-        }
-
-        // Close any blob URL tabs or PDF tabs that opened
-        try {
-          const pages = page.context().pages();
-          for (const p of pages) {
-            if (p !== page) {
-              await p.close();
-            }
-          }
-        } catch (err) {
-          console.log('Error closing popup pages:', err);
-        }
-
-        if (!pdfBuffer) {
-          console.warn(
-            `Failed to capture PDF for Agency ${stmt.agency}, Date ${stmt.statementDate}`,
-          );
-          await page.unroute('**/*');
-          continue;
-        }
-
-        // Generate filename from metadata
-        const dateForFilename = stmt.statementDate.replace(/\//g, '-');
-        const filename = `Bitco_Statement_Agency${stmt.agency}_${dateForFilename}.pdf`;
-
-        // Normalize date to YYYY-MM-DD format
-        const [month, day, year] = stmt.statementDate.split('/');
-        const normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-
-        statements.push({
-          pdfBuffer,
-          pdfFilename: filename,
-          statementDate: normalizedDate,
-        });
-
-        console.log(`Successfully captured: ${filename}`);
-        console.log(
-          `First 16 bytes of PDF: ${pdfBuffer!.slice(0, 16).toString('hex')}`,
-        );
-      } catch (err: any) {
-        console.error(
-          `Error downloading statement for Agency ${stmt.agency}:`,
-          err.message,
-        );
-        // Continue to next statement
-      } finally {
-        // Remove route handler
-        await page.unroute('**/*');
-
-        // Small delay between downloads
-        await page.waitForTimeout(1000);
-      }
-    }
+    // // Download each PDF using route interception
+    // const statements: Statement[] = [];
+    //
+    // for (let i = 0; i < filteredStatements.length; i++) {
+    //   const stmt = filteredStatements[i];
+    //   console.log(
+    //     `Downloading statement ${i + 1}/${filteredStatements.length}: Agency ${stmt.agency}, Date ${stmt.statementDate}`,
+    //   );
+    //
+    //   // Set up PDF capture via route interception
+    //   let pdfBuffer: Buffer | null = null;
+    //
+    //   await stagehand.context.route('**/*', async (route: any) => {
+    //     try {
+    //       const response = await route.fetch();
+    //       const contentType = response.headers()['content-type'] || '';
+    //
+    //       // Check if this is a PDF response
+    //       if (
+    //         contentType.includes('pdf') ||
+    //         response.url().includes('Document=')
+    //       ) {
+    //         const buffer = (await response.body()) as Buffer;
+    //
+    //         if (buffer && buffer.length > 0) {
+    //           pdfBuffer = buffer;
+    //           console.log('PDF captured, size:', buffer.length);
+    //         }
+    //       }
+    //
+    //       await route.fulfill({ response });
+    //     } catch (err: any) {
+    //       console.error('Error in route handler:', err.message);
+    //       try {
+    //         await route.continue();
+    //       } catch (e) {
+    //         console.error('Failed to continue route:', e);
+    //       }
+    //     }
+    //   });
+    //
+    //   try {
+    //     // Helper function to click and wait for PDF (CDP errors are expected)
+    //     const clickAndWait = async () => {
+    //       // Click using natural language instruction (works with shadow DOM)
+    //       // Be specific with agency number and date to target the right row
+    //       await stagehand.act(
+    //         `click the Direct Bill Commission Statement link for Agency ${stmt.agency} with statement date ${stmt.statementDate}`,
+    //       );
+    //
+    //       // Wait for PDF capture with timeout
+    //       const startTime = Date.now();
+    //       while (!pdfBuffer && Date.now() - startTime < 8000) {
+    //         await new Promise((resolve) => setTimeout(resolve, 500));
+    //       }
+    //
+    //       // Close any blob URL tabs or PDF tabs that opened
+    //       try {
+    //         const pages = stagehand.context.pages();
+    //         for (const p of pages) {
+    //           if (p !== page) {
+    //             await p.close();
+    //           }
+    //         }
+    //       } catch (err) {
+    //         console.log('Error closing popup pages:', err);
+    //       }
+    //     };
+    //
+    //     try {
+    //       await clickAndWait();
+    //     } catch (err: any) {
+    //       // CDP errors are expected when PDF opens in new tab
+    //       console.log(
+    //         'Error during click/wait (CDP error expected when PDF opens in new tab):',
+    //         err.message,
+    //       );
+    //       await new Promise((resolve) => setTimeout(resolve, 1000));
+    //
+    //       // Check if PDF was captured despite the error
+    //       if (!pdfBuffer) {
+    //         throw new Error(
+    //           `Failed to capture PDF for Agency ${stmt.agency}, Date ${stmt.statementDate}`,
+    //         );
+    //       }
+    //       console.log('PDF captured despite CDP error, continuing');
+    //     }
+    //
+    //     if (!pdfBuffer) {
+    //       throw new Error(
+    //         `Failed to capture PDF for Agency ${stmt.agency}, Date ${stmt.statementDate}`,
+    //       );
+    //     }
+    //
+    //     // Generate filename from metadata
+    //     const dateForFilename = stmt.statementDate.replace(/\//g, '-');
+    //     const filename = `Bitco_Statement_Agency${stmt.agency}_${dateForFilename}.pdf`;
+    //
+    //     // Normalize date to YYYY-MM-DD format
+    //     const [month, day, year] = stmt.statementDate.split('/');
+    //     const normalizedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    //
+    //     // Type assertion for pdfBuffer (we checked it's not null above)
+    //     const capturedPdf: Buffer = pdfBuffer as Buffer;
+    //
+    //     statements.push({
+    //       pdfBuffer: capturedPdf,
+    //       pdfFilename: filename,
+    //       statementDate: normalizedDate,
+    //     });
+    //
+    //     console.log(`Successfully captured: ${filename}`);
+    //     console.log(
+    //       `First 16 bytes of PDF: ${capturedPdf.slice(0, 16).toString('hex')}`,
+    //     );
+    // } catch (err: any) {
+    //   console.error(
+    //     `Error downloading statement for Agency ${stmt.agency}:`,
+    //     err.message,
+    //   );
+    //   // Continue to next statement
+    // } finally {
+    //     // Remove route handler
+    //     await stagehand.context.unroute('**/*');
+    //
+    //     // Small delay between downloads
+    //     await new Promise((resolve) => setTimeout(resolve, 1000));
+    //   }
+    // }
 
     return {
       success: true,
-      statements,
+      statements: []
     };
   } catch (error: unknown) {
     return {

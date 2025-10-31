@@ -12,6 +12,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "workflow": "tsx cli/run-workflow.ts",
+    "workflow:playwright": "tsx cli/run-bitco-playwright.ts",
     "lint": "eslint src cli --ext .ts",
     "lint:fix": "eslint src cli --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"cli/**/*.ts\"",
@@ -19,14 +20,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@browserbasehq/stagehand": "^2.5.2",
+    "@browserbasehq/stagehand": "^3.0.0",
     "@sentry/node": "^8.47.0",
     "@sentry/profiling-node": "^8.47.0",
     "axios": "^1.7.2",
     "cloudinary": "^2.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "playwright-core": "^1.49.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

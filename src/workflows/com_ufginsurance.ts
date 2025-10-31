@@ -21,37 +21,49 @@ export async function runWorkflow(
   job: WorkflowJob,
 ): Promise<WorkflowResult> {
   const { username, password, login_url: loginUrl } = job.credential;
-  const page = stagehand.page;
+  const page = stagehand.context.pages()[0];
 
   try {
     await page.goto(loginUrl);
-    await page.act(`type '${username}' into the User ID input`);
-    await page.act(`type '${password}' into the Password input`);
-    await page.act(`click the Submit button`);
-    await page.waitForTimeout(2000);
+    await stagehand.act(`type '${username}' into the User ID input`);
+    await stagehand.act(`type '${password}' into the Password input`);
+    await stagehand.act(`click the Submit button`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    await page.act(`click the REPORTS menu item`);
-    await page.act(`click the Agency Statements button`);
+    await stagehand.act(`click the REPORTS menu item`);
+    await stagehand.act(`click the Agency Statements button`);
 
-    await page.waitForSelector('.uikit__loading-indicator', {
-      state: 'detached',
-      timeout: 45000,
-    });
-    await page.waitForTimeout(2000);
+    // Wait for loading indicator to disappear (equivalent to state: 'detached')
+    const loadingIndicator = page.locator('.uikit__loading-indicator');
+    const startTime = Date.now();
+    const timeout = 45000;
+    while (Date.now() - startTime < timeout) {
+      try {
+        const isVisible = await loadingIndicator.isVisible();
+        if (!isVisible) break;
+      } catch {
+        // Element not found or detached from DOM
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const tableIsLoaded = page.getByText(
-      'Direct Bill Monthly Commissions (100 Series Policies)',
+    // Check if table is loaded using XPath with text content
+    const tableElement = page.locator(
+      "//text()[contains(., 'Direct Bill Monthly Commissions (100 Series Policies)')]/ancestor::*[1]"
     );
+    const tableIsLoaded = await tableElement.isVisible();
     if (!tableIsLoaded) {
       throw new Error('Statements table did not load properly.');
     }
 
-    const extractedStatements = await page.extract({
-      instruction: `Extract all the dates from the table in the "Direct Bill Monthly Commissions" section. Each row has a date in the first column.`,
-      schema: z.object({
+    const extractedStatements = await stagehand.extract(
+      `Extract all the dates from the table in the "Direct Bill Monthly Commissions" section. Each row has a date in the first column.`,
+      z.object({
         dates: z.array(z.string()),
       }),
-    });
+    );
 
     // Normalize date format: MM/DD/YYYY -> YYYY-MM-DD
     const normalizeDate = (dateStr: string): string => {
@@ -79,7 +91,7 @@ export async function runWorkflow(
     // Capture PDF via route interception (avoids CDP errors from new tab)
     let pdfBuffer: Buffer | null = null;
 
-    await page.route('**/*agency-statement*', async (route: any) => {
+    await stagehand.context.route('**/*agency-statement*', async (route: any) => {
       try {
         const response = await route.fetch();
         const buffer = (await response.body()) as Buffer;
@@ -100,10 +112,9 @@ export async function runWorkflow(
       }
     });
 
-    const buttonAction = await page.observe({
-      instruction: `Find the Monthly Statement button in the row with date ${matchingDate}`,
-      returnAction: true,
-    });
+    const buttonAction = await stagehand.observe(
+      `Find the Monthly Statement button in the row with date ${matchingDate}`,
+    );
 
     if (!buttonAction || buttonAction.length === 0) {
       throw new Error(
@@ -117,12 +128,12 @@ export async function runWorkflow(
 
       const startTime = Date.now();
       while (!pdfBuffer && Date.now() - startTime < 8000) {
-        await page.waitForTimeout(500);
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Close any blob URL tabs that opened
       try {
-        const pages = page.context().pages();
+        const pages = stagehand.context.pages();
         for (const p of pages) {
           if (p !== page && p.url().includes('blob:')) {
             await p.close();

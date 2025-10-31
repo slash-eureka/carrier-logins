@@ -78,7 +78,7 @@ export async function executeWorkflow(
       `../workflows/${carrierSlug}.js`
     )) as WorkflowModule;
 
-    return workflowModule.runWorkflow(client.stagehand, job);
+    return workflowModule.runWorkflow(client, job);
   } catch (error: unknown) {
     if (
       error instanceof Error &&

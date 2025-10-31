@@ -49,7 +49,7 @@ async function main() {
     process.exit(1);
   }
 
-  let client;
+  let stagehandClient: Stagehand | null = null;
   try {
     // Import the workflow script dynamically
     const workflowModule = (await import(
@@ -68,7 +68,7 @@ async function main() {
     }
 
     // Create Stagehand client
-    client = await createStagehandClient();
+    stagehandClient = await createStagehandClient();
 
     const accountingPeriodStartDate = new Date(
       new Date().getFullYear(),
@@ -89,9 +89,7 @@ async function main() {
       accounting_period_start_date: accountingPeriodStartDate,
     };
 
-    // Run the workflow
-    const result = await workflowModule.runWorkflow(client.stagehand, job);
-
+    const result = await workflowModule.runWorkflow(stagehandClient, job);
     console.log(JSON.stringify(result, null, 2));
 
     process.exit(result.success ? 0 : 1);
@@ -109,8 +107,8 @@ async function main() {
     );
     process.exit(1);
   } finally {
-    if (client) {
-      await client.close();
+    if (stagehandClient) {
+      await stagehandClient.close();
     }
   }
 }
