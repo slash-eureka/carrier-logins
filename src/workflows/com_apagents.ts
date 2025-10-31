@@ -50,7 +50,10 @@ export async function runWorkflow(
       !extractedStatements.statements ||
       extractedStatements.statements.length === 0
     ) {
-      throw new Error('No statements found in the table');
+      return {
+        success: true,
+        statements: [],
+      };
     }
 
     // Step 4: Parse target date and find matching statement
@@ -78,12 +81,12 @@ export async function runWorkflow(
     );
 
     if (!matchingStatement) {
-      throw new Error(
-        `No statement found for ${targetMonth} ${targetYear}. Available: ${extractedStatements.statements.map((s) => `${s.month} ${s.year}`).join(', ')}`,
-      );
+      return {
+        success: true,
+        statements: [],
+      };
     }
 
-    // Step 5: Locate the download button for the matching statement
     const downloadButtons = await page.observe(
       `Find the download button in the row with ${matchingStatement.month} ${matchingStatement.year}`,
     );
