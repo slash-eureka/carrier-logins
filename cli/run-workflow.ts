@@ -92,7 +92,17 @@ async function main() {
     // Run the workflow
     const result = await workflowModule.runWorkflow(client.stagehand, job);
 
-    console.log(JSON.stringify(result, null, 2));
+    const displayResult = {
+      success: result.success,
+      statements: result.statements.map((stmt) => ({
+        statementDate: stmt.statementDate,
+        pdfUrl: stmt.pdfUrl,
+        pdfSize: stmt.pdfBuffer ? `${stmt.pdfBuffer.length} bytes` : undefined,
+      })),
+      error: result.error,
+    };
+
+    console.log(JSON.stringify(displayResult, null, 2));
 
     process.exit(result.success ? 0 : 1);
   } catch (error: unknown) {
