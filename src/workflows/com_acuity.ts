@@ -52,9 +52,7 @@ export async function runWorkflow(
     );
 
     if (!statementLinks || statementLinks.length === 0) {
-      throw new Error(
-        `No agency statement found for date ${targetDate}`,
-      );
+      throw new Error(`No agency statement found for date ${targetDate}`);
     }
 
     // Step 7: Extract the statement URL from the link (avoid clicking which opens new tab)
@@ -69,7 +67,7 @@ export async function runWorkflow(
 
     // Step 8: Navigate directly to the statement URL (avoids new tab issues)
     await page.goto(statementUrl, { waitUntil: 'networkidle', timeout: 30000 });
-    
+
     console.log('Statement page loaded, current URL:', page.url());
 
     // Wait for page to fully render
@@ -77,7 +75,7 @@ export async function runWorkflow(
 
     // Step 9: Convert the HTML/XHTML page to PDF using browser print
     console.log('Converting statement page to PDF...');
-    
+
     pdfBuffer = (await page.pdf({
       format: 'Letter',
       printBackground: true,
@@ -96,7 +94,7 @@ export async function runWorkflow(
     }
 
     const filename = `Acuity_Statement_${job.accounting_period_start_date.replace(/\//g, '-')}.pdf`;
-    
+
     return {
       success: true,
       statements: [
@@ -115,4 +113,3 @@ export async function runWorkflow(
     };
   }
 }
-
