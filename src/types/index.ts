@@ -1,7 +1,7 @@
 export interface Statement {
   pdfUrl?: string;
-  pdfBuffer?: Buffer;
-  pdfFilename?: string;
+  fileBuffer?: Buffer;
+  filename?: string;
   statementDate: string;
 }
 

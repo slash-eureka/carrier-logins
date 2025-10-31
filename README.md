@@ -243,15 +243,15 @@ return {
 When PDFs are served as blob URLs or need to be captured from network responses:
 
 ```typescript
-// Set up route interception to capture PDF data
-let pdfBuffer: Buffer | null = null;
+// Set up route interception to capture file data
+let fileBuffer: Buffer | null = null;
 
 await page.route('**/*statement*', async (route: any) => {
   const response = await route.fetch();
   const buffer = (await response.body()) as Buffer;
 
   if (buffer && buffer.length > 0) {
-    pdfBuffer = buffer;
+    fileBuffer = buffer;
   }
 
   await route.fulfill({ response });
@@ -265,27 +265,105 @@ const buttonAction = await page.observe({
 
 await page.locator(buttonAction[0].selector).click();
 
-// Wait for PDF to be captured via route interception
+// Wait for file to be captured via route interception
 const startTime = Date.now();
-while (!pdfBuffer && Date.now() - startTime < 8000) {
+while (!fileBuffer && Date.now() - startTime < 8000) {
   await page.waitForTimeout(500);
 }
 
-if (!pdfBuffer) {
-  throw new Error('Failed to capture PDF');
+if (!fileBuffer) {
+  throw new Error('Failed to capture file');
 }
 
 return {
   success: true,
   statements: [
     {
-      pdfBuffer,
-      pdfFilename: `Statement_${job.accounting_period_start_date}.pdf`,
+      fileBuffer,
+      filename: `Statement_${job.accounting_period_start_date}.pdf`,
       statementDate: job.accounting_period_start_date,
     },
   ],
 };
 ```
+
+##### Option C: Form POST Submissions (like com_apagents.ts)
+
+When files are downloaded via form submissions (common for Excel files and on-demand generated reports):
+
+```typescript
+// Find the download button
+const downloadButtons = await page.observe(
+  `Find the download button for the target statement`
+);
+
+if (!downloadButtons || downloadButtons.length === 0) {
+  throw new Error('Could not find download button');
+}
+
+const buttonLocator = page.locator(downloadButtons[0].selector);
+
+// Extract form structure and data
+const buttonInfo = await buttonLocator.evaluate((el: any) => {
+  const form = el.closest('form');
+  if (!form) {
+    throw new Error('Download button is not inside a form');
+  }
+
+  const formData: any = {};
+  const inputs = form.querySelectorAll('input, button, select, textarea');
+  
+  inputs.forEach((input: any) => {
+    if (input.name) {
+      formData[input.name] = input.value;
+    }
+  });
+  
+  return {
+    formAction: form.action,      // POST URL
+    formData,                      // All form inputs
+    buttonName: el.name,           // Button's name attribute
+    buttonValue: el.value,         // Button's value
+  };
+});
+
+// Prepare POST data (include button name/value)
+const postData = {
+  ...buttonInfo.formData,
+  [buttonInfo.buttonName]: buttonInfo.buttonValue,
+};
+
+// Submit form via POST and capture file
+const response = await page.request.post(buttonInfo.formAction, {
+  form: postData,
+});
+
+if (!response.ok()) {
+  throw new Error(`Failed to fetch file: ${response.status()} ${response.statusText()}`);
+}
+
+const fileBytes = await response.body();
+
+if (!fileBytes || fileBytes.length === 0) {
+  throw new Error('Downloaded file is empty');
+}
+
+return {
+  success: true,
+  statements: [
+    {
+      fileBuffer: fileBytes,  // Works for Excel, PDF, or any file type
+      filename: `Statement_${job.accounting_period_start_date}.xlsx`,
+      statementDate: job.accounting_period_start_date,
+    },
+  ],
+};
+```
+
+**Note:** 
+- `fileBuffer` accepts any file type (Excel, PDF, CSV, etc.)
+- Use `page.request.post()` to submit forms programmatically while preserving session cookies
+- This approach captures files directly without dealing with browser downloads
 
 **Note:** Workflows are dynamically loaded at runtime - no registration needed! Just create the file with the correct naming convention and it will be automatically discovered.
 
@@ -344,26 +422,30 @@ All tests should pass. Consider adding workflow-specific tests if needed.
 
 ### Statement Object Structure
 
-The `Statement` interface supports two types of PDFs:
+The `Statement` interface supports two types of file delivery:
 
 ```typescript
 interface Statement {
   // For direct URLs (downloaded by statement-processor)
   pdfUrl?: string;
 
-  // For blob URLs or pre-captured PDFs
-  pdfBuffer?: Buffer;
-  pdfFilename?: string; // Required when using pdfBuffer
+  // For pre-captured files (PDFs, Excel, CSV, etc.)
+  fileBuffer?: Buffer;  // Works for any file type
+  filename?: string; // Required when using fileBuffer
 
   // Required for all statements
   statementDate: string;
 }
 ```
 
+**Notes:**
+- `fileBuffer` can contain any file type (PDF, Excel, CSV, etc.)
+- `filename` should include the appropriate extension (`.pdf`, `.xlsx`, `.csv`, etc.)
+
 **The statement-processor service will:**
-1. Check if `pdfBuffer` exists → use it directly
-2. Otherwise, check if `pdfUrl` exists → download PDF
-3. Upload PDF to Cloudinary
+1. Check if `fileBuffer` exists → use it directly
+2. Otherwise, check if `pdfUrl` exists → download the file
+3. Upload file to Cloudinary
 4. Send callback to Admin API
 
 ### Stagehand AI Methods
@@ -469,7 +551,8 @@ try {
 
 See existing workflow implementations:
 - **`src/workflows/net_abacus.ts`** - Direct PDF URL interception
-- **`src/workflows/com_ufginsurance.ts`** - Blob URL with PDF buffer capture
+- **`src/workflows/com_ufginsurance.ts`** - Blob URL with PDF buffer capture via route interception
+- **`src/workflows/com_apagents.ts`** - Form POST submission for Excel file downloads
 
 ### TODO
 - generate new org session token for auth

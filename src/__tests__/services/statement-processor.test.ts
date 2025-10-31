@@ -111,12 +111,12 @@ describe('statement-processor', () => {
       });
     });
 
-    describe('with pdfBuffer (pre-captured PDF)', () => {
+    describe('with fileBuffer (pre-captured file)', () => {
       it('should use buffer directly and upload to Cloudinary', async () => {
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
-          pdfBuffer: mockBuffer,
-          pdfFilename: 'UFG_Statement_2024-01-15.pdf',
+          fileBuffer: mockBuffer,
+          filename: 'UFG_Statement_2024-01-15.pdf',
           statementDate: '2024-01-15',
         };
 
@@ -146,10 +146,10 @@ describe('statement-processor', () => {
         expect(result).toEqual(mockAttachment);
       });
 
-      it('should use default filename if pdfFilename is not provided', async () => {
+      it('should use default filename if filename is not provided', async () => {
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
-          pdfBuffer: mockBuffer,
+          fileBuffer: mockBuffer,
           statementDate: '2024-01-15',
         };
 
@@ -176,11 +176,11 @@ describe('statement-processor', () => {
         expect(result).toEqual(mockAttachment);
       });
 
-      it('should throw error if pdfBuffer upload fails', async () => {
+      it('should throw error if fileBuffer upload fails', async () => {
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
-          pdfBuffer: mockBuffer,
-          pdfFilename: 'statement.pdf',
+          fileBuffer: mockBuffer,
+          filename: 'statement.pdf',
           statementDate: '2024-01-15',
         };
 
@@ -193,22 +193,22 @@ describe('statement-processor', () => {
     });
 
     describe('error cases', () => {
-      it('should throw error if statement has neither pdfUrl nor pdfBuffer', async () => {
+      it('should throw error if statement has neither pdfUrl nor fileBuffer', async () => {
         const statement: Statement = {
           statementDate: '2024-01-15',
         };
 
         await expect(processStatement(statement, 'net_abacus')).rejects.toThrow(
-          'Statement has neither pdfUrl nor pdfBuffer',
+          'Statement has neither pdfUrl nor fileBuffer',
         );
 
         expect(mockDownloadPdf).not.toHaveBeenCalled();
         expect(mockUploadPdf).not.toHaveBeenCalled();
       });
 
-      it('should throw error if pdfBuffer is empty', async () => {
+      it('should throw error if fileBuffer is empty', async () => {
         const statement: Statement = {
-          pdfBuffer: Buffer.from([]),
+          fileBuffer: Buffer.from([]),
           statementDate: '2024-01-15',
         };
 
@@ -219,10 +219,10 @@ describe('statement-processor', () => {
         expect(mockUploadPdf).not.toHaveBeenCalled();
       });
 
-      it('should throw error if pdfBuffer does not have valid PDF header', async () => {
+      it('should throw error if fileBuffer does not have valid PDF header', async () => {
         const statement: Statement = {
-          pdfBuffer: Buffer.from('<!DOCTYPE html>'),
-          pdfFilename: 'error.pdf',
+          fileBuffer: Buffer.from('<!DOCTYPE html>'),
+          filename: 'error.pdf',
           statementDate: '2024-01-15',
         };
 
@@ -234,13 +234,13 @@ describe('statement-processor', () => {
       });
     });
 
-    describe('pdfBuffer priority', () => {
-      it('should prefer pdfBuffer over pdfUrl when both are present', async () => {
+    describe('fileBuffer priority', () => {
+      it('should prefer fileBuffer over pdfUrl when both are present', async () => {
         const mockBuffer = Buffer.from('%PDF-1.4\nmock pdf content');
         const statement: Statement = {
           pdfUrl: 'https://example.com/statement.pdf',
-          pdfBuffer: mockBuffer,
-          pdfFilename: 'buffer_statement.pdf',
+          fileBuffer: mockBuffer,
+          filename: 'buffer_statement.pdf',
           statementDate: '2024-01-15',
         };
 

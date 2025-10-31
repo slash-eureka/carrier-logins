@@ -97,7 +97,10 @@ async function main() {
       statements: result.statements.map((stmt) => ({
         statementDate: stmt.statementDate,
         pdfUrl: stmt.pdfUrl,
-        pdfSize: stmt.pdfBuffer ? `${stmt.pdfBuffer.length} bytes` : undefined,
+        filename: stmt.filename,
+        fileSize: stmt.fileBuffer
+          ? `${stmt.fileBuffer.length} bytes`
+          : undefined,
       })),
       error: result.error,
     };
