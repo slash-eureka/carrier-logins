@@ -24,16 +24,13 @@ export async function runWorkflow(
   const page = stagehand.page;
 
   try {
-    // Step 1: Navigate to login page
     await page.goto(loginUrl);
 
-    // Step 2: Enter credentials and login
     await page.act(`type '${username}' into the Email/Username input`);
     await page.act(`type '${password}' into the Password input`);
     await page.act(`click the Login button`);
     await page.waitForTimeout(2000);
 
-    // Step 3: Extract all statements from the table
     const extractedStatements = await page.extract({
       instruction: `Extract all statements from the table. For each row, get the month and year.`,
       schema: z.object({
@@ -56,8 +53,6 @@ export async function runWorkflow(
       };
     }
 
-    // Step 4: Parse target date and find matching statement
-    // Use UTC to avoid timezone issues
     const [year, month, day] = job.accounting_period_start_date
       .split('-')
       .map(Number);
@@ -73,7 +68,6 @@ export async function runWorkflow(
       `Available statements: ${extractedStatements.statements.map((s) => `${s.month} ${s.year}`).join(', ')}`,
     );
 
-    // Find the matching statement
     const matchingStatement = extractedStatements.statements.find(
       (stmt) =>
         stmt.month.toLowerCase() === targetMonth.toLowerCase() &&
