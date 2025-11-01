@@ -10,6 +10,22 @@ import type { WorkflowJob, WorkflowResult } from '../types/index.js';
 import { getErrorMessage } from '../lib/error-utils.js';
 
 /**
+ * Convert date from YYYY-MM-DD to "MMM YYYY" format for Acuity
+ * @param dateString - Date in YYYY-MM-DD format
+ * @returns Date in "MMM YYYY" format (e.g., "Sep 2025")
+ */
+function formatDate(dateString: string): string {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const monthAbbr = date.toLocaleString('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  const yearStr = date.getUTCFullYear().toString();
+  return `${monthAbbr} ${yearStr}`;
+}
+
+/**
  * Run workflow for Acuity Insurance supplier statement fetching
  * @param stagehand - Stagehand client instance
  * @param job - Workflow job with credentials and metadata
@@ -24,6 +40,9 @@ export async function runWorkflow(
 
   try {
     let pdfBuffer: Buffer | null = null;
+
+    // Convert date to Acuity's format (e.g., "Sep 2025")
+    const targetDate = formatDate(job.accounting_period_start_date);
 
     // Step 1: Navigate to login URL
     await page.goto(loginUrl);
@@ -45,8 +64,6 @@ export async function runWorkflow(
     await page.waitForTimeout(2000);
 
     // Step 6: Find the statement link for the specified accounting period
-    // TODO: Remove hardcoded date after testing
-    const targetDate = 'Sep 2025'; // Hardcoded for testing
     const statementLinks = await page.observe(
       `Find the Agency Statement - Acuity link for the statement with date ${targetDate}`,
     );
