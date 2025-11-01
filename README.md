@@ -365,6 +365,68 @@ return {
 - Use `page.request.post()` to submit forms programmatically while preserving session cookies
 - This approach captures files directly without dealing with browser downloads
 
+##### Option D: HTML-to-PDF Conversion via Browser Print (like com_acuity.ts)
+
+When statements are displayed as HTML/XHTML web pages rather than downloadable PDFs:
+
+```typescript
+// Step 1: Find and extract the statement page URL
+const statementLinks = await page.observe(
+  `Find the Agency Statement link for the statement with date ${targetDate}`,
+);
+
+if (!statementLinks || statementLinks.length === 0) {
+  throw new Error(`No statement found for date ${targetDate}`);
+}
+
+// Step 2: Extract the statement URL from the link
+const linkLocator = page.locator(statementLinks[0].selector);
+const statementUrl = await linkLocator.evaluate((el: any) => el.href);
+
+if (!statementUrl) {
+  throw new Error('Could not extract statement URL from link');
+}
+
+// Step 3: Navigate directly to the statement URL
+await page.goto(statementUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+// Wait for page to fully render
+await page.waitForTimeout(2000);
+
+// Step 4: Convert the HTML/XHTML page to PDF using browser print
+const pdfBuffer = (await page.pdf({
+  format: 'Letter',
+  printBackground: true,
+  margin: {
+    top: '0.5in',
+    right: '0.5in',
+    bottom: '0.5in',
+    left: '0.5in',
+  },
+})) as Buffer;
+
+if (!pdfBuffer || pdfBuffer.length === 0) {
+  throw new Error('Failed to generate PDF from statement page');
+}
+
+return {
+  success: true,
+  statements: [
+    {
+      fileBuffer: pdfBuffer,
+      filename: `Statement_${job.accounting_period_start_date.replace(/\//g, '-')}.pdf`,
+      statementDate: job.accounting_period_start_date,
+    },
+  ],
+};
+```
+
+**Note:**
+- This uses Playwright's `page.pdf()` method to convert rendered HTML to PDF
+- Best for carriers that display statements as web pages instead of providing downloadable PDFs
+- Ensure `waitUntil: 'networkidle'` to let the page fully load before conversion
+- You can customize PDF format, margins, and other print options
+
 **Note:** Workflows are dynamically loaded at runtime - no registration needed! Just create the file with the correct naming convention and it will be automatically discovered.
 
 #### 4. Test the Workflow
@@ -553,6 +615,7 @@ See existing workflow implementations:
 - **`src/workflows/net_abacus.ts`** - Direct PDF URL interception
 - **`src/workflows/com_ufginsurance.ts`** - Blob URL with PDF buffer capture via route interception
 - **`src/workflows/com_apagents.ts`** - Form POST submission for Excel file downloads
+- **`src/workflows/com_acuity.ts`** - HTML-to-PDF conversion via browser print
 
 ### TODO
 - generate new org session token for auth
