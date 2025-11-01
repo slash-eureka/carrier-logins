@@ -41,29 +41,22 @@ export async function runWorkflow(
   try {
     let pdfBuffer: Buffer | null = null;
 
-    // Convert date to Acuity's format (e.g., "Sep 2025")
     const targetDate = formatDate(job.accounting_period_start_date);
 
-    // Step 1: Navigate to login URL
     await page.goto(loginUrl);
 
-    // Step 2: Enter username
     await page.act(`type '${username}' into the Login ID field`);
 
-    // Step 3: Enter password
     await page.act(`type '${password}' into the Password field`);
 
-    // Step 4: Click Log In button
     await page.act(`click the Log In button`);
 
     await page.waitForTimeout(2000);
 
-    // Step 5: Navigate to Agency Statement
     await page.act(`click the Agency Statement link`);
 
     await page.waitForTimeout(2000);
 
-    // Step 6: Find the statement link for the specified accounting period
     const statementLinks = await page.observe(
       `Find the Agency Statement - Acuity link for the statement with date ${targetDate}`,
     );
@@ -90,7 +83,6 @@ export async function runWorkflow(
 
     console.log('Statement page loaded, current URL:', page.url());
 
-    // Wait for page to fully render
     await page.waitForTimeout(2000);
 
     // Step 9: Convert the HTML/XHTML page to PDF using browser print
