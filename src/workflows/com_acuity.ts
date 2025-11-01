@@ -69,7 +69,10 @@ export async function runWorkflow(
     );
 
     if (!statementLinks || statementLinks.length === 0) {
-      throw new Error(`No agency statement found for date ${targetDate}`);
+      return {
+        success: true,
+        statements: [],
+      };
     }
 
     // Step 7: Extract the statement URL from the link (avoid clicking which opens new tab)
